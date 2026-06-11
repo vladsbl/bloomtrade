@@ -10,7 +10,11 @@ const ASSETS: Asset[] = [
 
   // Crypto
   { symbol: 'BTC', apiSymbol: 'BINANCE:BTCUSDT', name: 'Bitcoin', type: 'crypto' },
+  { symbol: 'BTCEUR', apiSymbol: 'BINANCE:BTCEUR', name: 'Bitcoin EUR', type: 'crypto' },
   { symbol: 'ETH', apiSymbol: 'BINANCE:ETHUSDT', name: 'Ethereum', type: 'crypto' },
+
+  // Commodities (Finnhub forex symbol for spot gold)
+  { symbol: 'XAUUSD', apiSymbol: 'OANDA:XAU_USD', name: 'Gold', type: 'commodity' },
 
   // Stocks
   { symbol: 'AAPL', apiSymbol: 'AAPL', name: 'Apple', type: 'stock' },
@@ -47,4 +51,9 @@ export function toApiSymbol(symbol: string): string {
 /** API symbol (or already-UI symbol) -> canonical UI symbol. */
 export function toUiSymbol(symbol: string): string {
   return resolveAsset(symbol).symbol;
+}
+
+/** All registered assets — used by the asset search. */
+export function getAllAssets(): Asset[] {
+  return [...ASSETS];
 }

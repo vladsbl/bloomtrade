@@ -21,6 +21,13 @@ export const en = {
   'market.losers': 'Top Losers',
   'market.noMovers': 'No data',
   'market.news': 'Financial News',
+  'market.searchPlaceholder': 'Search assets (e.g. Bitcoin, AAPL, Gold)',
+  'market.noResults': 'No matching assets',
+
+  'assetType.stock': 'Stock',
+  'assetType.crypto': 'Crypto',
+  'assetType.index': 'Index',
+  'assetType.commodity': 'Commodity',
 
   'newsDetail.expandedSummary': 'Expanded Summary',
   'newsDetail.context': 'Context',
@@ -96,6 +103,13 @@ export const fr: Record<TranslationKey, string> = {
   'market.losers': 'Plus fortes baisses',
   'market.noMovers': 'Aucune donnée',
   'market.news': 'Actualités financières',
+  'market.searchPlaceholder': 'Rechercher un actif (ex : Bitcoin, AAPL, Or)',
+  'market.noResults': 'Aucun actif correspondant',
+
+  'assetType.stock': 'Action',
+  'assetType.crypto': 'Crypto',
+  'assetType.index': 'Indice',
+  'assetType.commodity': 'Matière première',
 
   'newsDetail.expandedSummary': 'Résumé détaillé',
   'newsDetail.context': 'Contexte',

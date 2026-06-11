@@ -19,7 +19,12 @@ export default function WatchlistCard({ item, onRemove }: WatchlistCardProps) {
 
   return (
     <View style={styles.row}>
-      <Text style={styles.symbol}>{item.symbol}</Text>
+      <View style={styles.identity}>
+        <Text style={styles.symbol}>{item.symbol}</Text>
+        <Text style={styles.name} numberOfLines={1}>
+          {item.name}
+        </Text>
+      </View>
 
       <View style={styles.values}>
         {hasQuote ? (
@@ -55,11 +60,19 @@ const createStyles = (colors: ColorPalette) =>
       paddingVertical: 12,
       marginBottom: 8,
     },
-    symbol: {
+    identity: {
       flex: 1,
+      marginRight: 12,
+    },
+    symbol: {
       color: colors.text,
       fontSize: 15,
       fontWeight: '700',
+    },
+    name: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginTop: 2,
     },
     values: {
       alignItems: 'flex-end',

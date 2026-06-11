@@ -7,6 +7,7 @@ export interface MarketOverviewItem {
 
 export interface WatchlistItem {
   symbol: string;
+  name: string;
   price: number | null;
   changePercent: number | null;
 }

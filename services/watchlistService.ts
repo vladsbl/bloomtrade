@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getStockQuotes } from './financeApi';
-import { toUiSymbol } from './assetRegistry';
+import { resolveAsset, toUiSymbol } from './assetRegistry';
 import { WatchlistItem } from '../types/market';
 
 const STORAGE_KEY = '@market_journal/watchlist';
@@ -49,6 +49,7 @@ export async function getWatchlistQuotes(symbols: string[]): Promise<WatchlistIt
     const quote = quoteBySymbol.get(symbol);
     return {
       symbol,
+      name: resolveAsset(symbol).name,
       price: quote?.currentPrice ?? null,
       changePercent: quote?.percentChange ?? null,
     };

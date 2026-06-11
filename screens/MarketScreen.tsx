@@ -10,10 +10,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AssetSearchInput from '../components/AssetSearchInput';
 import MarketOverviewCard from '../components/MarketOverviewCard';
 import NewsCard from '../components/NewsCard';
 import TopMoversCard from '../components/TopMoversCard';
@@ -29,6 +29,7 @@ import {
 } from '../services/watchlistService';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
+import { Asset } from '../types/asset';
 import { ColorPalette } from '../theme/palettes';
 import { MarketOverviewItem, TopMoversData, WatchlistItem } from '../types/market';
 import { NewsItem } from '../types/news';
@@ -50,7 +51,6 @@ export default function MarketScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isAddingAsset, setIsAddingAsset] = useState(false);
-  const [newAssetSymbol, setNewAssetSymbol] = useState('');
 
   const listRef = useRef<FlatList<NewsItem>>(null);
   useScrollToTop(listRef);
@@ -93,20 +93,20 @@ export default function MarketScreen() {
     setRefreshing(false);
   }, [loadDashboard]);
 
-  const handleAddAsset = useCallback(async () => {
-    const symbol = newAssetSymbol.trim().toUpperCase();
-    setNewAssetSymbol('');
-    setIsAddingAsset(false);
+  const handleSelectAsset = useCallback(
+    async (asset: Asset) => {
+      setIsAddingAsset(false);
+      if (watchlistSymbols.includes(asset.symbol)) return;
 
-    if (!symbol || watchlistSymbols.includes(symbol)) return;
+      const updatedSymbols = [...watchlistSymbols, asset.symbol];
+      setWatchlistSymbols(updatedSymbols);
+      await saveWatchlistSymbols(updatedSymbols);
 
-    const updatedSymbols = [...watchlistSymbols, symbol];
-    setWatchlistSymbols(updatedSymbols);
-    await saveWatchlistSymbols(updatedSymbols);
-
-    const quotes = await getWatchlistQuotes(updatedSymbols);
-    setWatchlistItems(quotes);
-  }, [newAssetSymbol, watchlistSymbols]);
+      const quotes = await getWatchlistQuotes(updatedSymbols);
+      setWatchlistItems(quotes);
+    },
+    [watchlistSymbols]
+  );
 
   const handleRemoveAsset = useCallback(
     (symbol: string) => {
@@ -178,22 +178,7 @@ export default function MarketScreen() {
               </View>
 
               {isAddingAsset && (
-                <View style={styles.addRow}>
-                  <TextInput
-                    style={styles.addInput}
-                    placeholder={t('market.addSymbolPlaceholder')}
-                    placeholderTextColor={colors.textSecondary}
-                    autoCapitalize="characters"
-                    autoFocus
-                    returnKeyType="done"
-                    value={newAssetSymbol}
-                    onChangeText={setNewAssetSymbol}
-                    onSubmitEditing={handleAddAsset}
-                  />
-                  <Pressable onPress={handleAddAsset} hitSlop={8}>
-                    <Ionicons name="checkmark-circle" size={28} color={colors.primary} />
-                  </Pressable>
-                </View>
+                <AssetSearchInput existingSymbols={watchlistSymbols} onSelect={handleSelectAsset} />
               )}
 
               {watchlistItems.length === 0 ? (
@@ -281,23 +266,6 @@ const createStyles = (colors: ColorPalette) =>
       color: colors.primary,
       fontSize: 13,
       fontWeight: '700',
-    },
-    addRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-      marginBottom: 10,
-    },
-    addInput: {
-      flex: 1,
-      backgroundColor: colors.surface,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      color: colors.text,
-      fontSize: 14,
     },
     moversRow: {
       flexDirection: 'row',
