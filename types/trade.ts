@@ -7,6 +7,5 @@ export interface Trade {
   entryPrice: number;
   exitPrice: number;
   quantity: number;
-  date: string;
   notes?: string;
 }

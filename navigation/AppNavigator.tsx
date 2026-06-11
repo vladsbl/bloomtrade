@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { DarkTheme, NavigationContainer, Theme } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer, Theme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import MarketStack from './MarketStack';
 import JournalScreen from '../screens/JournalScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import { colors } from '../theme/colors';
+import { useLanguage } from '../store/i18n';
+import { useTheme } from '../store/theme';
 
 export type RootTabParamList = {
   Market: undefined;
@@ -15,18 +16,6 @@ export type RootTabParamList = {
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
-const navigationTheme: Theme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: colors.background,
-    card: colors.surface,
-    border: colors.border,
-    primary: colors.primary,
-    text: colors.text,
-  },
-};
-
 const ICONS: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> = {
   Market: 'trending-up',
   Journal: 'book-outline',
@@ -34,6 +23,28 @@ const ICONS: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function AppNavigator() {
+  const { mode, colors } = useTheme();
+  const { t } = useLanguage();
+
+  const baseTheme = mode === 'dark' ? DarkTheme : DefaultTheme;
+  const navigationTheme: Theme = {
+    ...baseTheme,
+    colors: {
+      ...baseTheme.colors,
+      background: colors.background,
+      card: colors.surface,
+      border: colors.border,
+      primary: colors.primary,
+      text: colors.text,
+    },
+  };
+
+  const LABELS: Record<keyof RootTabParamList, string> = {
+    Market: t('tabs.market'),
+    Journal: t('tabs.journal'),
+    Settings: t('tabs.settings'),
+  };
+
   return (
     <NavigationContainer theme={navigationTheme}>
       <Tab.Navigator
@@ -45,6 +56,7 @@ export default function AppNavigator() {
             backgroundColor: colors.surface,
             borderTopColor: colors.border,
           },
+          tabBarLabel: LABELS[route.name],
           tabBarIcon: ({ color, size }) => (
             <Ionicons name={ICONS[route.name]} size={size} color={color} />
           ),

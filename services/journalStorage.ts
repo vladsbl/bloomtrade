@@ -1,14 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Trade } from '../types/trade';
+import { JournalDay } from '../types/journal';
 
-const STORAGE_KEY = '@market_journal/trades';
+const STORAGE_KEY = '@market_journal/journal_days';
 
-export async function loadTrades(): Promise<Trade[]> {
+export async function loadJournalDays(): Promise<JournalDay[]> {
   const raw = await AsyncStorage.getItem(STORAGE_KEY);
   if (!raw) return [];
-  return JSON.parse(raw) as Trade[];
+  return JSON.parse(raw) as JournalDay[];
 }
 
-export async function saveTrades(trades: Trade[]): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+export async function saveJournalDays(days: JournalDay[]): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(days));
 }

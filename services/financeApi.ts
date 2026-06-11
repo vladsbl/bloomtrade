@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { detectAsset } from './assetDetector';
+import { detectPrimaryAsset } from './assetDetection';
 import { analyzeSentiment, calculateImpactScore, getImpactLevel } from './sentiment';
 import { NewsItem } from '../types/news';
 import { StockQuote } from '../types/quote';
@@ -94,7 +94,7 @@ export async function getMarketNews(): Promise<NewsItem[]> {
         sentiment: analyzeSentiment(text),
         impactScore,
         impactLevel: getImpactLevel(impactScore),
-        asset: detectAsset(text),
+        asset: detectPrimaryAsset(text),
       };
     });
 

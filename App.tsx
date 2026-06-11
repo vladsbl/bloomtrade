@@ -2,15 +2,31 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './navigation/AppNavigator';
-import { JournalProvider } from './store/JournalContext';
+import { LanguageProvider } from './store/i18n';
+import { JournalByDateProvider } from './store/journalByDate';
+import { ThemeProvider, useTheme } from './store/theme';
+
+function AppContent() {
+  const { mode } = useTheme();
+
+  return (
+    <>
+      <AppNavigator />
+      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+    </>
+  );
+}
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <JournalProvider>
-        <AppNavigator />
-        <StatusBar style="light" />
-      </JournalProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <JournalByDateProvider>
+            <AppContent />
+          </JournalByDateProvider>
+        </LanguageProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

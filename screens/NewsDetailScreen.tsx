@@ -13,21 +13,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ImpactBadge from '../components/ImpactBadge';
 import SentimentBadge from '../components/SentimentBadge';
 import { MarketStackParamList } from '../navigation/MarketStack';
-import { detectAssets } from '../services/assetDetector';
+import { detectRelatedAssets } from '../services/assetDetection';
 import { getStockQuotes } from '../services/financeApi';
-import { colors } from '../theme/colors';
+import { expandSummary } from '../services/newsEnhancer';
+import { useLanguage } from '../store/i18n';
+import { useTheme } from '../store/theme';
+import { ColorPalette } from '../theme/palettes';
 import { StockQuote } from '../types/quote';
 
 type NewsDetailRouteProp = RouteProp<MarketStackParamList, 'NewsDetail'>;
 
 export default function NewsDetailScreen() {
+  const { colors } = useTheme();
+  const { t } = useLanguage();
+  const styles = createStyles(colors);
+
   const { params } = useRoute<NewsDetailRouteProp>();
   const { article } = params;
 
   const [quotes, setQuotes] = useState<StockQuote[]>([]);
   const [loadingQuotes, setLoadingQuotes] = useState(true);
 
-  const tickers = detectAssets(`${article.title} ${article.summary}`);
+  const tickers = detectRelatedAssets(`${article.title} ${article.summary}`);
+  const expanded = expandSummary(article);
 
   useEffect(() => {
     if (tickers.length === 0) {
@@ -58,17 +66,28 @@ export default function NewsDetailScreen() {
           <ImpactBadge level={article.impactLevel} score={article.impactScore} />
         </View>
 
-        <Text style={styles.summary}>{article.summary}</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('newsDetail.expandedSummary')}</Text>
+
+          <Text style={styles.summaryLabel}>{t('newsDetail.context')}</Text>
+          <Text style={styles.summaryText}>{expanded.context}</Text>
+
+          <Text style={styles.summaryLabel}>{t('newsDetail.summary')}</Text>
+          <Text style={styles.summaryText}>{expanded.summary}</Text>
+
+          <Text style={styles.summaryLabel}>{t('newsDetail.marketImpact')}</Text>
+          <Text style={styles.summaryText}>{expanded.marketImpact}</Text>
+        </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Related Assets</Text>
+          <Text style={styles.sectionTitle}>{t('newsDetail.relatedAssets')}</Text>
 
           {tickers.length === 0 ? (
-            <Text style={styles.empty}>No related assets</Text>
+            <Text style={styles.empty}>{t('newsDetail.noRelatedAssets')}</Text>
           ) : loadingQuotes ? (
             <ActivityIndicator color={colors.primary} style={styles.loader} />
           ) : quotes.length === 0 ? (
-            <Text style={styles.empty}>Price data unavailable</Text>
+            <Text style={styles.empty}>{t('newsDetail.priceUnavailable')}</Text>
           ) : (
             quotes.map((quote) => {
               const isUp = quote.percentChange >= 0;
@@ -90,7 +109,7 @@ export default function NewsDetailScreen() {
 
         {!!article.url && (
           <Pressable style={styles.sourceButton} onPress={handleOpenSource}>
-            <Text style={styles.sourceButtonText}>Open original article</Text>
+            <Text style={styles.sourceButtonText}>{t('newsDetail.openSource')}</Text>
           </Pressable>
         )}
       </ScrollView>
@@ -98,97 +117,106 @@ export default function NewsDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  meta: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: '800',
-    marginBottom: 12,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  summary: {
-    color: colors.text,
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  section: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  empty: {
-    color: colors.textSecondary,
-    fontSize: 13,
-  },
-  loader: {
-    marginVertical: 4,
-  },
-  quoteRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  quoteSymbol: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  quoteValues: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  quotePrice: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  quoteChange: {
-    fontSize: 13,
-    fontWeight: '700',
-    minWidth: 60,
-    textAlign: 'right',
-  },
-  sourceButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  sourceButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: 16,
+      paddingBottom: 32,
+    },
+    meta: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginBottom: 8,
+    },
+    title: {
+      color: colors.text,
+      fontSize: 22,
+      fontWeight: '800',
+      marginBottom: 12,
+    },
+    badgeRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 16,
+    },
+    summaryLabel: {
+      color: colors.textSecondary,
+      fontSize: 11,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginTop: 10,
+      marginBottom: 4,
+    },
+    summaryText: {
+      color: colors.text,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    section: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '700',
+      marginBottom: 10,
+    },
+    empty: {
+      color: colors.textSecondary,
+      fontSize: 13,
+    },
+    loader: {
+      marginVertical: 4,
+    },
+    quoteRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 8,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    quoteSymbol: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    quoteValues: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    quotePrice: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    quoteChange: {
+      fontSize: 13,
+      fontWeight: '700',
+      minWidth: 60,
+      textAlign: 'right',
+    },
+    sourceButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 14,
+      alignItems: 'center',
+    },
+    sourceButtonText: {
+      color: '#fff',
+      fontWeight: '700',
+      fontSize: 15,
+    },
+  });
