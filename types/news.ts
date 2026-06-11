@@ -1,4 +1,6 @@
-export type NewsSentiment = 'positive' | 'negative' | 'neutral';
+export type MarketSentiment = 'bullish' | 'bearish' | 'neutral';
+
+export type ImpactLevel = 'low' | 'medium' | 'high';
 
 export interface NewsItem {
   id: string;
@@ -6,6 +8,10 @@ export interface NewsItem {
   source: string;
   time: string;
   summary: string;
-  sentiment?: NewsSentiment;
   url?: string;
+  sentiment: MarketSentiment;
+  impactScore: number;
+  impactLevel: ImpactLevel;
+  asset?: string;
+  priceChangePercent?: number;
 }

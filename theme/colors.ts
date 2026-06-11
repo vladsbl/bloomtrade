@@ -9,4 +9,5 @@ export const colors = {
   positive: '#26C281',
   negative: '#F85149',
   neutral: '#8B949E',
+  warning: '#F2B84B',
 };

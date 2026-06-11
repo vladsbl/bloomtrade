@@ -1,16 +1,25 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
-import { NewsItem, NewsSentiment } from '../types/news';
+import { ImpactLevel, MarketSentiment, NewsItem } from '../types/news';
 
-const SENTIMENT_COLOR: Record<NewsSentiment, string> = {
-  positive: colors.positive,
-  negative: colors.negative,
-  neutral: colors.neutral,
+const SENTIMENT_BADGE: Record<MarketSentiment, { emoji: string; label: string; color: string }> = {
+  bullish: { emoji: '🟢', label: 'Bullish', color: colors.positive },
+  bearish: { emoji: '🔴', label: 'Bearish', color: colors.negative },
+  neutral: { emoji: '⚪', label: 'Neutral', color: colors.neutral },
+};
+
+const IMPACT_BADGE: Record<ImpactLevel, { emoji: string; label: string; color: string }> = {
+  high: { emoji: '🔴', label: 'High', color: colors.negative },
+  medium: { emoji: '🟡', label: 'Medium', color: colors.warning },
+  low: { emoji: '🟢', label: 'Low', color: colors.positive },
 };
 
 export default function NewsCard({ item }: { item: NewsItem }) {
-  const sentiment = item.sentiment ?? 'neutral';
+  const sentimentBadge = SENTIMENT_BADGE[item.sentiment];
+  const impactBadge = IMPACT_BADGE[item.impactLevel];
+  const hasPriceChange = item.asset && item.priceChangePercent !== undefined;
+  const isPriceUp = (item.priceChangePercent ?? 0) >= 0;
 
   return (
     <View style={styles.card}>
@@ -20,7 +29,29 @@ export default function NewsCard({ item }: { item: NewsItem }) {
       </View>
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.summary}>{item.summary}</Text>
-      <View style={[styles.sentimentDot, { backgroundColor: SENTIMENT_COLOR[sentiment] }]} />
+
+      <View style={styles.badgeRow}>
+        <View style={[styles.badge, { borderColor: sentimentBadge.color }]}>
+          <Text style={styles.badgeText}>
+            {sentimentBadge.emoji} {sentimentBadge.label}
+          </Text>
+        </View>
+        <View style={[styles.badge, { borderColor: impactBadge.color }]}>
+          <Text style={styles.badgeText}>
+            {impactBadge.emoji} {impactBadge.label}
+          </Text>
+        </View>
+        {hasPriceChange && (
+          <View style={[styles.badge, { borderColor: isPriceUp ? colors.positive : colors.negative }]}>
+            <Text
+              style={[styles.badgeText, { color: isPriceUp ? colors.positive : colors.negative }]}
+            >
+              {item.asset} {isPriceUp ? '+' : ''}
+              {item.priceChangePercent!.toFixed(2)}%
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -60,12 +91,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  sentimentDot: {
-    position: 'absolute',
-    top: 14,
-    right: -4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
+  },
+  badge: {
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  badgeText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '600',
   },
 });

@@ -1,6 +1,10 @@
 import axios from 'axios';
+import { detectAsset } from './assetDetector';
+import { analyzeSentiment, calculateImpactScore, getImpactLevel } from './sentiment';
 import { NewsItem } from '../types/news';
 import { StockQuote } from '../types/quote';
+
+const MAX_NEWS_ITEMS = 20;
 
 const FINNHUB_API_KEY = process.env.EXPO_PUBLIC_FINNHUB_API_KEY ?? '';
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
@@ -58,17 +62,58 @@ export async function getMarketNews(): Promise<NewsItem[]> {
       params: { category: 'general' },
     });
 
-    return data.map((item) => ({
-      id: item.id.toString(),
-      title: item.headline,
-      source: item.source,
-      time: formatRelativeTime(item.datetime),
-      summary: item.summary,
-      url: item.url,
-    }));
+    const validNews = data
+      .filter((item) => !!item.headline && !!item.summary && !!item.source && !!item.datetime)
+      .slice(0, MAX_NEWS_ITEMS);
+
+    const enrichedNews = validNews.map((item): NewsItem => {
+      const text = `${item.headline} ${item.summary}`;
+      const impactScore = calculateImpactScore(text, item.source);
+
+      return {
+        id: item.id.toString(),
+        title: item.headline,
+        source: item.source,
+        time: formatRelativeTime(item.datetime),
+        summary: item.summary,
+        url: item.url,
+        sentiment: analyzeSentiment(text),
+        impactScore,
+        impactLevel: getImpactLevel(impactScore),
+        asset: detectAsset(text),
+      };
+    });
+
+    return attachPriceChanges(enrichedNews);
   } catch (error) {
     throw new Error('Impossible de récupérer les actualités financières.');
   }
+}
+
+async function attachPriceChanges(news: NewsItem[]): Promise<NewsItem[]> {
+  const assets = Array.from(
+    new Set(news.map((item) => item.asset).filter((asset): asset is string => !!asset))
+  );
+
+  const quotes = await Promise.all(
+    assets.map(async (symbol) => {
+      try {
+        const quote = await getStockQuote(symbol);
+        return [symbol, quote.percentChange] as const;
+      } catch {
+        return [symbol, undefined] as const;
+      }
+    })
+  );
+
+  const percentChangeBySymbol = new Map(quotes);
+
+  return news.map((item) => {
+    if (!item.asset) return item;
+
+    const percentChange = percentChangeBySymbol.get(item.asset);
+    return percentChange === undefined ? item : { ...item, priceChangePercent: percentChange };
+  });
 }
 
 function formatRelativeTime(timestampSeconds: number): string {
