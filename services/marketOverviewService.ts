@@ -1,32 +1,21 @@
 import { getStockQuotes } from './financeApi';
+import { resolveAsset } from './assetRegistry';
 import { MarketOverviewItem } from '../types/market';
 
-interface MarketOverviewDefinition {
-  symbol: string;
-  displayName: string;
-}
-
-// ETF proxies are used for indices since Finnhub's free tier does not expose raw index tickers.
-const MARKET_OVERVIEW_DEFINITIONS: MarketOverviewDefinition[] = [
-  { symbol: 'SPY', displayName: 'S&P 500' },
-  { symbol: 'QQQ', displayName: 'Nasdaq' },
-  { symbol: 'DIA', displayName: 'Dow Jones' },
-  { symbol: 'BTC', displayName: 'Bitcoin' },
-  { symbol: 'ETH', displayName: 'Ethereum' },
-];
+// UI symbols only — names and API symbols are resolved through the asset registry.
+const MARKET_OVERVIEW_SYMBOLS = ['SPY', 'QQQ', 'DIA', 'BTC', 'ETH'];
 
 export async function getMarketOverview(): Promise<MarketOverviewItem[]> {
-  const symbols = MARKET_OVERVIEW_DEFINITIONS.map((definition) => definition.symbol);
-  const quotes = await getStockQuotes(symbols);
+  const quotes = await getStockQuotes(MARKET_OVERVIEW_SYMBOLS);
   const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
 
-  return MARKET_OVERVIEW_DEFINITIONS.reduce<MarketOverviewItem[]>((items, definition) => {
-    const quote = quoteBySymbol.get(definition.symbol);
+  return MARKET_OVERVIEW_SYMBOLS.reduce<MarketOverviewItem[]>((items, symbol) => {
+    const quote = quoteBySymbol.get(symbol);
     if (!quote) return items;
 
     items.push({
-      symbol: definition.symbol,
-      displayName: definition.displayName,
+      symbol,
+      displayName: resolveAsset(symbol).name,
       price: quote.currentPrice,
       changePercent: quote.percentChange,
     });

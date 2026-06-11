@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toApiSymbol } from './assetRegistry';
 import { detectPrimaryAsset } from './assetDetection';
 import { analyzeSentiment, calculateImpactScore, getImpactLevel } from './sentiment';
 import { NewsItem } from '../types/news';
@@ -38,11 +39,11 @@ interface FinnhubNewsItem {
 export async function getStockQuote(symbol: string): Promise<StockQuote> {
   try {
     const { data } = await finnhubClient.get<FinnhubQuoteResponse>('/quote', {
-      params: { symbol },
+      params: { symbol: toApiSymbol(symbol) },
     });
 
     return {
-      symbol,
+      symbol, // keep the UI symbol so callers can key results by what they requested
       currentPrice: data.c,
       change: data.d,
       percentChange: data.dp,
