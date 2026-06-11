@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { DarkTheme, NavigationContainer, Theme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
+import MarketStack from './MarketStack';
 import JournalScreen from '../screens/JournalScreen';
-import MarketScreen from '../screens/MarketScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { colors } from '../theme/colors';
 
@@ -50,7 +50,7 @@ export default function AppNavigator() {
           ),
         })}
       >
-        <Tab.Screen name="Market" component={MarketScreen} />
+        <Tab.Screen name="Market" component={MarketStack} />
         <Tab.Screen name="Journal" component={JournalScreen} />
         <Tab.Screen name="Settings" component={SettingsScreen} />
       </Tab.Navigator>

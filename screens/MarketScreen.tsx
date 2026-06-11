@@ -1,12 +1,18 @@
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NewsCard from '../components/NewsCard';
+import { MarketStackParamList } from '../navigation/MarketStack';
 import { getMarketNews } from '../services/financeApi';
 import { colors } from '../theme/colors';
 import { NewsItem } from '../types/news';
 
+type MarketScreenNavigationProp = NativeStackNavigationProp<MarketStackParamList, 'MarketFeed'>;
+
 export default function MarketScreen() {
+  const navigation = useNavigation<MarketScreenNavigationProp>();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +39,9 @@ export default function MarketScreen() {
         <FlatList
           data={news}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <NewsCard item={item} />}
+          renderItem={({ item }) => (
+            <NewsCard item={item} onPress={() => navigation.navigate('NewsDetail', { article: item })} />
+          )}
           contentContainerStyle={styles.list}
         />
       )}

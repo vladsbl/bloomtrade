@@ -56,6 +56,20 @@ export async function getStockQuote(symbol: string): Promise<StockQuote> {
   }
 }
 
+export async function getStockQuotes(symbols: string[]): Promise<StockQuote[]> {
+  const quotes = await Promise.all(
+    symbols.map(async (symbol) => {
+      try {
+        return await getStockQuote(symbol);
+      } catch {
+        return null;
+      }
+    })
+  );
+
+  return quotes.filter((quote): quote is StockQuote => quote !== null);
+}
+
 export async function getMarketNews(): Promise<NewsItem[]> {
   try {
     const { data } = await finnhubClient.get<FinnhubNewsItem[]>('/news', {
@@ -95,18 +109,8 @@ async function attachPriceChanges(news: NewsItem[]): Promise<NewsItem[]> {
     new Set(news.map((item) => item.asset).filter((asset): asset is string => !!asset))
   );
 
-  const quotes = await Promise.all(
-    assets.map(async (symbol) => {
-      try {
-        const quote = await getStockQuote(symbol);
-        return [symbol, quote.percentChange] as const;
-      } catch {
-        return [symbol, undefined] as const;
-      }
-    })
-  );
-
-  const percentChangeBySymbol = new Map(quotes);
+  const quotes = await getStockQuotes(assets);
+  const percentChangeBySymbol = new Map(quotes.map((quote) => [quote.symbol, quote.percentChange]));
 
   return news.map((item) => {
     if (!item.asset) return item;

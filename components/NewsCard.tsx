@@ -1,28 +1,16 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import ImpactBadge from './ImpactBadge';
+import SentimentBadge from './SentimentBadge';
 import { colors } from '../theme/colors';
-import { ImpactLevel, MarketSentiment, NewsItem } from '../types/news';
+import { NewsItem } from '../types/news';
 
-const SENTIMENT_BADGE: Record<MarketSentiment, { emoji: string; label: string; color: string }> = {
-  bullish: { emoji: '🟢', label: 'Bullish', color: colors.positive },
-  bearish: { emoji: '🔴', label: 'Bearish', color: colors.negative },
-  neutral: { emoji: '⚪', label: 'Neutral', color: colors.neutral },
-};
-
-const IMPACT_BADGE: Record<ImpactLevel, { emoji: string; label: string; color: string }> = {
-  high: { emoji: '🔴', label: 'High', color: colors.negative },
-  medium: { emoji: '🟡', label: 'Medium', color: colors.warning },
-  low: { emoji: '🟢', label: 'Low', color: colors.positive },
-};
-
-export default function NewsCard({ item }: { item: NewsItem }) {
-  const sentimentBadge = SENTIMENT_BADGE[item.sentiment];
-  const impactBadge = IMPACT_BADGE[item.impactLevel];
+export default function NewsCard({ item, onPress }: { item: NewsItem; onPress?: () => void }) {
   const hasPriceChange = item.asset && item.priceChangePercent !== undefined;
   const isPriceUp = (item.priceChangePercent ?? 0) >= 0;
 
   return (
-    <View style={styles.card}>
+    <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.header}>
         <Text style={styles.source}>{item.source}</Text>
         <Text style={styles.time}>{item.time}</Text>
@@ -31,16 +19,8 @@ export default function NewsCard({ item }: { item: NewsItem }) {
       <Text style={styles.summary}>{item.summary}</Text>
 
       <View style={styles.badgeRow}>
-        <View style={[styles.badge, { borderColor: sentimentBadge.color }]}>
-          <Text style={styles.badgeText}>
-            {sentimentBadge.emoji} {sentimentBadge.label}
-          </Text>
-        </View>
-        <View style={[styles.badge, { borderColor: impactBadge.color }]}>
-          <Text style={styles.badgeText}>
-            {impactBadge.emoji} {impactBadge.label}
-          </Text>
-        </View>
+        <SentimentBadge sentiment={item.sentiment} />
+        <ImpactBadge level={item.impactLevel} score={item.impactScore} />
         {hasPriceChange && (
           <View style={[styles.badge, { borderColor: isPriceUp ? colors.positive : colors.negative }]}>
             <Text
@@ -52,7 +32,7 @@ export default function NewsCard({ item }: { item: NewsItem }) {
           </View>
         )}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
