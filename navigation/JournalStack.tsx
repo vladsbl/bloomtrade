@@ -3,6 +3,7 @@ import React from 'react';
 import AddTradeScreen from '../screens/AddTradeScreen';
 import EditJournalNoteScreen from '../screens/EditJournalNoteScreen';
 import JournalScreen from '../screens/JournalScreen';
+import PortfolioScreen from '../screens/PortfolioScreen';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 
@@ -10,6 +11,7 @@ export type JournalStackParamList = {
   JournalHome: undefined;
   AddTrade: { date: string };
   EditJournalNote: { date: string };
+  Portfolio: undefined;
 };
 
 const Stack = createNativeStackNavigator<JournalStackParamList>();
@@ -36,6 +38,11 @@ export default function JournalStack() {
         name="EditJournalNote"
         component={EditJournalNoteScreen}
         options={{ title: t('journal.noteTitle') }}
+      />
+      <Stack.Screen
+        name="Portfolio"
+        component={PortfolioScreen}
+        options={{ title: t('portfolio.title') }}
       />
     </Stack.Navigator>
   );

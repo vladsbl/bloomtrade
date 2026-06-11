@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
@@ -58,6 +59,10 @@ export default function JournalScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('journal.title')}</Text>
+        <Pressable style={styles.portfolioButton} onPress={() => navigation.navigate('Portfolio')}>
+          <Ionicons name="pie-chart-outline" size={16} color={colors.primary} />
+          <Text style={styles.portfolioButtonText}>{t('portfolio.title')}</Text>
+        </Pressable>
       </View>
 
       <FlatList
@@ -122,6 +127,9 @@ const createStyles = (colors: ColorPalette) =>
       backgroundColor: colors.background,
     },
     header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
       paddingHorizontal: 16,
       paddingVertical: 12,
     },
@@ -129,6 +137,22 @@ const createStyles = (colors: ColorPalette) =>
       color: colors.text,
       fontSize: 26,
       fontWeight: '800',
+    },
+    portfolioButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 8,
+    },
+    portfolioButtonText: {
+      color: colors.primary,
+      fontSize: 13,
+      fontWeight: '700',
     },
     list: {
       paddingBottom: 24,

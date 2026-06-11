@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './navigation/AppNavigator';
+import { AlertsProvider } from './store/alerts';
 import { LanguageProvider } from './store/i18n';
 import { JournalByDateProvider } from './store/journalByDate';
 import { ThemeProvider, useTheme } from './store/theme';
@@ -23,7 +24,9 @@ export default function App() {
       <ThemeProvider>
         <LanguageProvider>
           <JournalByDateProvider>
-            <AppContent />
+            <AlertsProvider>
+              <AppContent />
+            </AlertsProvider>
           </JournalByDateProvider>
         </LanguageProvider>
       </ThemeProvider>

@@ -3,6 +3,7 @@ export const en = {
 
   'tabs.market': 'Market',
   'tabs.journal': 'Journal',
+  'tabs.alerts': 'Alerts',
   'tabs.settings': 'Settings',
 
   'market.title': 'Market Dashboard',
@@ -77,6 +78,32 @@ export const en = {
   'settings.language': 'Language',
   'settings.french': 'French',
   'settings.english': 'English',
+
+  'portfolio.title': 'Portfolio',
+  'portfolio.totalValue': 'Total Portfolio Value',
+  'portfolio.quantity': 'Qty',
+  'portfolio.avgEntry': 'Avg Entry',
+  'portfolio.current': 'Current',
+  'portfolio.value': 'Value',
+  'portfolio.empty': 'No positions yet. Add trades in your journal to build your portfolio.',
+
+  'alerts.title': 'Alerts',
+  'alerts.addAlert': 'Add Alert',
+  'alerts.above': 'Above',
+  'alerts.below': 'Below',
+  'alerts.targetPrice': 'Target price',
+  'alerts.create': 'Create alert',
+  'alerts.empty': 'No price alerts yet',
+  'alerts.triggered': 'Triggered',
+  'alerts.notificationTitle': 'Price alert',
+
+  'brief.title': 'Daily Brief',
+  'brief.marketOverview': 'Market Overview',
+  'brief.insights': 'Insights',
+  'brief.topNews': 'Top News',
+  'brief.globalSentiment': 'Global sentiment',
+  'brief.watchlistTrend': 'Watchlist trend',
+  'brief.newsBalance': 'News balance',
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -86,6 +113,7 @@ export const fr: Record<TranslationKey, string> = {
 
   'tabs.market': 'Marché',
   'tabs.journal': 'Journal',
+  'tabs.alerts': 'Alertes',
   'tabs.settings': 'Réglages',
 
   'market.title': 'Tableau de bord marché',
@@ -160,4 +188,31 @@ export const fr: Record<TranslationKey, string> = {
   'settings.language': 'Langue',
   'settings.french': 'Français',
   'settings.english': 'Anglais',
+
+  'portfolio.title': 'Portefeuille',
+  'portfolio.totalValue': 'Valeur totale du portefeuille',
+  'portfolio.quantity': 'Qté',
+  'portfolio.avgEntry': 'Entrée moy.',
+  'portfolio.current': 'Actuel',
+  'portfolio.value': 'Valeur',
+  'portfolio.empty':
+    'Aucune position. Ajoutez des trades dans votre journal pour constituer votre portefeuille.',
+
+  'alerts.title': 'Alertes',
+  'alerts.addAlert': 'Ajouter une alerte',
+  'alerts.above': 'Au-dessus de',
+  'alerts.below': 'En dessous de',
+  'alerts.targetPrice': 'Prix cible',
+  'alerts.create': "Créer l'alerte",
+  'alerts.empty': 'Aucune alerte de prix',
+  'alerts.triggered': 'Déclenchée',
+  'alerts.notificationTitle': 'Alerte de prix',
+
+  'brief.title': 'Résumé quotidien',
+  'brief.marketOverview': "Vue d'ensemble",
+  'brief.insights': 'Analyses',
+  'brief.topNews': 'Actualités principales',
+  'brief.globalSentiment': 'Sentiment global',
+  'brief.watchlistTrend': 'Tendance liste de suivi',
+  'brief.newsBalance': 'Équilibre des news',
 };

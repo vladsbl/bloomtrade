@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import JournalStack from './JournalStack';
 import MarketStack from './MarketStack';
+import AlertsScreen from '../screens/AlertsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
@@ -11,6 +12,7 @@ import { useTheme } from '../store/theme';
 export type RootTabParamList = {
   Market: undefined;
   Journal: undefined;
+  Alerts: undefined;
   Settings: undefined;
 };
 
@@ -19,6 +21,7 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 const ICONS: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> = {
   Market: 'trending-up',
   Journal: 'book-outline',
+  Alerts: 'notifications-outline',
   Settings: 'settings-outline',
 };
 
@@ -42,6 +45,7 @@ export default function AppNavigator() {
   const LABELS: Record<keyof RootTabParamList, string> = {
     Market: t('tabs.market'),
     Journal: t('tabs.journal'),
+    Alerts: t('tabs.alerts'),
     Settings: t('tabs.settings'),
   };
 
@@ -64,6 +68,7 @@ export default function AppNavigator() {
       >
         <Tab.Screen name="Market" component={MarketStack} />
         <Tab.Screen name="Journal" component={JournalStack} />
+        <Tab.Screen name="Alerts" component={AlertsScreen} />
         <Tab.Screen name="Settings" component={SettingsScreen} />
       </Tab.Navigator>
     </NavigationContainer>
