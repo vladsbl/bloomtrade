@@ -1,4 +1,6 @@
 export const en = {
+  'common.done': 'Done',
+
   'tabs.market': 'Market',
   'tabs.journal': 'Journal',
   'tabs.settings': 'Settings',
@@ -62,6 +64,8 @@ export const en = {
 export type TranslationKey = keyof typeof en;
 
 export const fr: Record<TranslationKey, string> = {
+  'common.done': 'Terminé',
+
   'tabs.market': 'Marché',
   'tabs.journal': 'Journal',
   'tabs.settings': 'Réglages',

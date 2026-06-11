@@ -1,7 +1,10 @@
+import { useHeaderHeight } from '@react-navigation/elements';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  InputAccessoryView,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,14 +12,18 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { JournalStackParamList } from '../navigation/JournalStack';
 import { useLanguage } from '../store/i18n';
 import { useJournalByDate } from '../store/journalByDate';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
 import { TradeDirection } from '../types/trade';
+
+const ACCESSORY_ID = 'addTradeAccessory';
 
 type AddTradeRouteProp = RouteProp<JournalStackParamList, 'AddTrade'>;
 type AddTradeNavigationProp = NativeStackNavigationProp<JournalStackParamList, 'AddTrade'>;
@@ -29,6 +36,7 @@ export default function AddTradeScreen() {
   const navigation = useNavigation<AddTradeNavigationProp>();
   const { params } = useRoute<AddTradeRouteProp>();
   const { addTrade } = useJournalByDate();
+  const headerHeight = useHeaderHeight();
 
   const [symbol, setSymbol] = useState('');
   const [direction, setDirection] = useState<TradeDirection>('LONG');
@@ -52,102 +60,135 @@ export default function AddTradeScreen() {
     navigation.goBack();
   };
 
-  return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.field}>
-          <Text style={styles.label}>{t('trade.symbol')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="AAPL"
-            placeholderTextColor={colors.textSecondary}
-            autoCapitalize="characters"
-            value={symbol}
-            onChangeText={setSymbol}
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>{t('trade.direction')}</Text>
-          <View style={styles.directionRow}>
-            {(['LONG', 'SHORT'] as TradeDirection[]).map((d) => (
-              <Pressable
-                key={d}
-                style={[styles.directionButton, direction === d && styles.directionButtonActive]}
-                onPress={() => setDirection(d)}
-              >
-                <Text
-                  style={[styles.directionText, direction === d && styles.directionTextActive]}
-                >
-                  {d === 'LONG' ? t('trade.long') : t('trade.short')}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>{t('trade.entryPrice')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="0.00"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="decimal-pad"
-            value={entryPrice}
-            onChangeText={setEntryPrice}
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>{t('trade.exitPrice')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="0.00"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="decimal-pad"
-            value={exitPrice}
-            onChangeText={setExitPrice}
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>{t('trade.quantity')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="0"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="decimal-pad"
-            value={quantity}
-            onChangeText={setQuantity}
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>{t('trade.notes')}</Text>
-          <TextInput
-            style={[styles.input, styles.notesInput]}
-            placeholder={t('trade.notes')}
-            placeholderTextColor={colors.textSecondary}
-            multiline
-            value={notes}
-            onChangeText={setNotes}
-          />
-        </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <Pressable
-          style={[styles.saveButton, !isValid && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={!isValid}
-        >
-          <Text style={styles.saveButtonText}>{t('journal.save')}</Text>
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable onPress={handleSave} disabled={!isValid} hitSlop={8}>
+          <Text style={[styles.headerButton, !isValid && styles.headerButtonDisabled]}>
+            {t('journal.save')}
+          </Text>
         </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+      ),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigation, isValid, symbol, direction, entryPrice, exitPrice, quantity, notes]);
+
+  return (
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <ScrollView
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+          >
+            <View style={styles.field}>
+              <Text style={styles.label}>{t('trade.symbol')}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="AAPL"
+                placeholderTextColor={colors.textSecondary}
+                autoCapitalize="characters"
+                returnKeyType="done"
+                value={symbol}
+                onChangeText={setSymbol}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>{t('trade.direction')}</Text>
+              <View style={styles.directionRow}>
+                {(['LONG', 'SHORT'] as TradeDirection[]).map((d) => (
+                  <Pressable
+                    key={d}
+                    style={[
+                      styles.directionButton,
+                      direction === d && styles.directionButtonActive,
+                    ]}
+                    onPress={() => setDirection(d)}
+                  >
+                    <Text
+                      style={[
+                        styles.directionText,
+                        direction === d && styles.directionTextActive,
+                      ]}
+                    >
+                      {d === 'LONG' ? t('trade.long') : t('trade.short')}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>{t('trade.entryPrice')}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="0.00"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="decimal-pad"
+                inputAccessoryViewID={Platform.OS === 'ios' ? ACCESSORY_ID : undefined}
+                value={entryPrice}
+                onChangeText={setEntryPrice}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>{t('trade.exitPrice')}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="0.00"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="decimal-pad"
+                inputAccessoryViewID={Platform.OS === 'ios' ? ACCESSORY_ID : undefined}
+                value={exitPrice}
+                onChangeText={setExitPrice}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>{t('trade.quantity')}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="0"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="decimal-pad"
+                inputAccessoryViewID={Platform.OS === 'ios' ? ACCESSORY_ID : undefined}
+                value={quantity}
+                onChangeText={setQuantity}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>{t('trade.notes')}</Text>
+              <TextInput
+                style={[styles.input, styles.notesInput]}
+                placeholder={t('trade.notes')}
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                inputAccessoryViewID={Platform.OS === 'ios' ? ACCESSORY_ID : undefined}
+                value={notes}
+                onChangeText={setNotes}
+              />
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID={ACCESSORY_ID}>
+          <View style={styles.accessory}>
+            <Pressable onPress={() => Keyboard.dismiss()} hitSlop={8}>
+              <Text style={styles.accessoryDone}>{t('common.done')}</Text>
+            </Pressable>
+          </View>
+        </InputAccessoryView>
+      )}
+    </SafeAreaView>
   );
 }
 
@@ -210,24 +251,26 @@ const createStyles = (colors: ColorPalette) =>
     directionTextActive: {
       color: '#fff',
     },
-    footer: {
-      padding: 16,
+    headerButton: {
+      color: colors.primary,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    headerButtonDisabled: {
+      opacity: 0.4,
+    },
+    accessory: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      backgroundColor: colors.surface,
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      backgroundColor: colors.background,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
     },
-    saveButton: {
-      backgroundColor: colors.primary,
-      borderRadius: 10,
-      paddingVertical: 14,
-      alignItems: 'center',
-    },
-    saveButtonDisabled: {
-      opacity: 0.5,
-    },
-    saveButtonText: {
-      color: '#fff',
+    accessoryDone: {
+      color: colors.primary,
+      fontSize: 16,
       fontWeight: '700',
-      fontSize: 15,
     },
   });
