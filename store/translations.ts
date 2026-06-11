@@ -23,6 +23,7 @@ export const en = {
   'market.news': 'Financial News',
   'market.searchPlaceholder': 'Search assets (e.g. Bitcoin, AAPL, Gold)',
   'market.noResults': 'No matching assets',
+  'market.dataUnavailable': 'Data unavailable',
 
   'assetType.stock': 'Stock',
   'assetType.crypto': 'Crypto',
@@ -105,6 +106,7 @@ export const fr: Record<TranslationKey, string> = {
   'market.news': 'Actualités financières',
   'market.searchPlaceholder': 'Rechercher un actif (ex : Bitcoin, AAPL, Or)',
   'market.noResults': 'Aucun actif correspondant',
+  'market.dataUnavailable': 'Donnée indisponible',
 
   'assetType.stock': 'Action',
   'assetType.crypto': 'Crypto',

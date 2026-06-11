@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { toApiSymbol } from './assetRegistry';
+import { resolveAsset } from './assetRegistry';
+import { getBinanceQuote } from './binanceApi';
 import { detectPrimaryAsset } from './assetDetection';
 import { analyzeSentiment, calculateImpactScore, getImpactLevel } from './sentiment';
 import { NewsItem } from '../types/news';
@@ -36,14 +37,36 @@ interface FinnhubNewsItem {
   url: string;
 }
 
+/**
+ * Fetch a quote for a UI symbol, dispatching to the asset's data source.
+ * The returned quote is keyed by the UI symbol so callers can match by
+ * what they requested, regardless of the upstream API symbol.
+ */
 export async function getStockQuote(symbol: string): Promise<StockQuote> {
+  const asset = resolveAsset(symbol);
+
+  const quote =
+    asset.source === 'binance'
+      ? await getBinanceQuote(asset.apiSymbol)
+      : await getFinnhubQuote(asset.apiSymbol);
+
+  return { ...quote, symbol: asset.symbol };
+}
+
+async function getFinnhubQuote(apiSymbol: string): Promise<StockQuote> {
   try {
     const { data } = await finnhubClient.get<FinnhubQuoteResponse>('/quote', {
-      params: { symbol: toApiSymbol(symbol) },
+      params: { symbol: apiSymbol },
     });
 
+    // Finnhub returns c:0 (and d:null) for symbols it has no data/access for.
+    // Treat that as unavailable instead of surfacing a fake $0 price.
+    if (!data || !data.c) {
+      throw new Error('no data');
+    }
+
     return {
-      symbol, // keep the UI symbol so callers can key results by what they requested
+      symbol: apiSymbol,
       currentPrice: data.c,
       change: data.d,
       percentChange: data.dp,
@@ -53,7 +76,7 @@ export async function getStockQuote(symbol: string): Promise<StockQuote> {
       previousClose: data.pc,
     };
   } catch (error) {
-    throw new Error(`Impossible de récupérer la cotation pour ${symbol}.`);
+    throw new Error(`Impossible de récupérer la cotation pour ${apiSymbol}.`);
   }
 }
 

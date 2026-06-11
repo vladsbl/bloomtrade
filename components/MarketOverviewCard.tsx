@@ -1,24 +1,34 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
 import { MarketOverviewItem } from '../types/market';
 
 export default function MarketOverviewCard({ item }: { item: MarketOverviewItem }) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = createStyles(colors);
-  const isUp = item.changePercent >= 0;
+
+  const hasData = item.price !== null && item.changePercent !== null;
+  const isUp = (item.changePercent ?? 0) >= 0;
 
   return (
     <View style={styles.card}>
       <Text style={styles.name} numberOfLines={1}>
         {item.displayName}
       </Text>
-      <Text style={styles.price}>${formatPrice(item.price)}</Text>
-      <Text style={[styles.change, { color: isUp ? colors.positive : colors.negative }]}>
-        {isUp ? '+' : ''}
-        {item.changePercent.toFixed(2)}%
-      </Text>
+      {hasData ? (
+        <>
+          <Text style={styles.price}>${formatPrice(item.price!)}</Text>
+          <Text style={[styles.change, { color: isUp ? colors.positive : colors.negative }]}>
+            {isUp ? '+' : ''}
+            {item.changePercent!.toFixed(2)}%
+          </Text>
+        </>
+      ) : (
+        <Text style={styles.unavailable}>{t('market.dataUnavailable')}</Text>
+      )}
     </View>
   );
 }
@@ -58,5 +68,10 @@ const createStyles = (colors: ColorPalette) =>
     change: {
       fontSize: 13,
       fontWeight: '700',
+    },
+    unavailable: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '600',
     },
   });

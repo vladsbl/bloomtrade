@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
 import { WatchlistItem } from '../types/market';
@@ -12,6 +13,7 @@ interface WatchlistCardProps {
 
 export default function WatchlistCard({ item, onRemove }: WatchlistCardProps) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = createStyles(colors);
 
   const hasQuote = item.price !== null && item.changePercent !== null;
@@ -36,7 +38,7 @@ export default function WatchlistCard({ item, onRemove }: WatchlistCardProps) {
             </Text>
           </>
         ) : (
-          <Text style={styles.unavailable}>--</Text>
+          <Text style={styles.unavailable}>{t('market.dataUnavailable')}</Text>
         )}
       </View>
 

@@ -1,8 +1,8 @@
 export interface MarketOverviewItem {
   symbol: string;
   displayName: string;
-  price: number;
-  changePercent: number;
+  price: number | null;
+  changePercent: number | null;
 }
 
 export interface WatchlistItem {

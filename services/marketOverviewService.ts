@@ -2,23 +2,22 @@ import { getStockQuotes } from './financeApi';
 import { resolveAsset } from './assetRegistry';
 import { MarketOverviewItem } from '../types/market';
 
-// UI symbols only — names and API symbols are resolved through the asset registry.
-const MARKET_OVERVIEW_SYMBOLS = ['SPY', 'QQQ', 'DIA', 'BTC', 'ETH'];
+// UI symbols only — names, API symbols and data sources are resolved through the registry.
+const MARKET_OVERVIEW_SYMBOLS = ['SPY', 'QQQ', 'DIA', 'BTC', 'ETH', 'XAUUSD'];
 
 export async function getMarketOverview(): Promise<MarketOverviewItem[]> {
   const quotes = await getStockQuotes(MARKET_OVERVIEW_SYMBOLS);
   const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
 
-  return MARKET_OVERVIEW_SYMBOLS.reduce<MarketOverviewItem[]>((items, symbol) => {
+  // Always return every item so the UI can render a "Data unavailable" state
+  // rather than silently dropping an index/asset.
+  return MARKET_OVERVIEW_SYMBOLS.map((symbol) => {
     const quote = quoteBySymbol.get(symbol);
-    if (!quote) return items;
-
-    items.push({
+    return {
       symbol,
       displayName: resolveAsset(symbol).name,
-      price: quote.currentPrice,
-      changePercent: quote.percentChange,
-    });
-    return items;
-  }, []);
+      price: quote?.currentPrice ?? null,
+      changePercent: quote?.percentChange ?? null,
+    };
+  });
 }
