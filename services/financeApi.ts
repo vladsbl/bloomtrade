@@ -2,7 +2,7 @@ import axios from 'axios';
 import { NewsItem } from '../types/news';
 import { StockQuote } from '../types/quote';
 
-const FINNHUB_API_KEY = 'YOUR_FINNHUB_API_KEY';
+const FINNHUB_API_KEY = process.env.EXPO_PUBLIC_FINNHUB_API_KEY ?? '';
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 
 const finnhubClient = axios.create({
