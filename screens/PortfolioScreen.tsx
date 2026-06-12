@@ -13,8 +13,9 @@ const EMPTY_SUMMARY: PortfolioSummary = {
   positions: [],
   totalValue: 0,
   totalCost: 0,
-  totalPnl: 0,
-  totalPnlPercent: 0,
+  totalUnrealizedPnl: 0,
+  totalUnrealizedPnlPercent: 0,
+  totalRealizedPnl: 0,
 };
 
 export default function PortfolioScreen() {
@@ -42,9 +43,13 @@ export default function PortfolioScreen() {
     setRefreshing(false);
   }, [load]);
 
-  const isUp = summary.totalPnl >= 0;
+  const isUp = summary.totalUnrealizedPnl >= 0;
   const pnlColor = isUp ? colors.positive : colors.negative;
   const sign = isUp ? '+' : '';
+
+  const isRealizedUp = summary.totalRealizedPnl >= 0;
+  const realizedColor = isRealizedUp ? colors.positive : colors.negative;
+  const realizedSign = isRealizedUp ? '+' : '';
 
   if (loading) {
     return (
@@ -69,16 +74,24 @@ export default function PortfolioScreen() {
             <Text style={styles.summaryValue}>${formatMoney(summary.totalValue)}</Text>
             <View style={styles.pnlRow}>
               <Text style={[styles.summaryPnl, { color: pnlColor }]}>
-                {sign}${formatMoney(Math.abs(summary.totalPnl))}
+                {sign}${formatMoney(Math.abs(summary.totalUnrealizedPnl))}
               </Text>
               <Text style={[styles.summaryPnlPercent, { color: pnlColor }]}>
                 {sign}
-                {summary.totalPnlPercent.toFixed(2)}%
+                {summary.totalUnrealizedPnlPercent.toFixed(2)}%
               </Text>
             </View>
-            <View style={styles.openPositionsRow}>
-              <Text style={styles.summaryLabel}>{t('portfolio.openPositions')}</Text>
-              <Text style={styles.openPositionsValue}>{summary.positions.length}</Text>
+            <View style={styles.extraStats}>
+              <View style={styles.extraStatsRow}>
+                <Text style={styles.summaryLabel}>{t('portfolio.openPositions')}</Text>
+                <Text style={styles.extraStatsValue}>{summary.positions.length}</Text>
+              </View>
+              <View style={[styles.extraStatsRow, styles.extraStatsRowSpacing]}>
+                <Text style={styles.summaryLabel}>{t('portfolio.realizedPnl')}</Text>
+                <Text style={[styles.extraStatsValue, { color: realizedColor }]}>
+                  {realizedSign}${formatMoney(Math.abs(summary.totalRealizedPnl))}
+                </Text>
+              </View>
             </View>
           </View>
         }
@@ -143,16 +156,21 @@ const createStyles = (colors: ColorPalette) =>
       fontSize: 15,
       fontWeight: '700',
     },
-    openPositionsRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+    extraStats: {
       marginTop: 16,
       paddingTop: 16,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
     },
-    openPositionsValue: {
+    extraStatsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    extraStatsRowSpacing: {
+      marginTop: 10,
+    },
+    extraStatsValue: {
       color: colors.text,
       fontSize: 14,
       fontWeight: '800',

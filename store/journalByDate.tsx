@@ -15,6 +15,7 @@ interface JournalByDateContextValue {
   loading: boolean;
   getDay: (date: string) => JournalDay;
   addTrade: (date: string, trade: Omit<Trade, 'id'>) => void;
+  updateTrade: (date: string, tradeId: string, updates: Partial<Omit<Trade, 'id'>>) => void;
   removeTrade: (date: string, tradeId: string) => void;
   setNote: (date: string, note: string) => void;
 }
@@ -65,6 +66,29 @@ export function JournalByDateProvider({ children }: { children: ReactNode }) {
     [persist]
   );
 
+  // Edit an existing trade in place — e.g. to close an open position later
+  // (set status: 'closed' and an exitPrice) without recreating it.
+  const updateTrade = useCallback(
+    (date: string, tradeId: string, updates: Partial<Omit<Trade, 'id'>>) => {
+      setDays((prev) => {
+        const day = prev[date];
+        if (!day) return prev;
+        const next = {
+          ...prev,
+          [date]: {
+            ...day,
+            trades: day.trades.map((trade) =>
+              trade.id === tradeId ? { ...trade, ...updates } : trade
+            ),
+          },
+        };
+        persist(next);
+        return next;
+      });
+    },
+    [persist]
+  );
+
   const removeTrade = useCallback(
     (date: string, tradeId: string) => {
       setDays((prev) => {
@@ -101,7 +125,7 @@ export function JournalByDateProvider({ children }: { children: ReactNode }) {
 
   return (
     <JournalByDateContext.Provider
-      value={{ days, loading, getDay, addTrade, removeTrade, setNote }}
+      value={{ days, loading, getDay, addTrade, updateTrade, removeTrade, setNote }}
     >
       {children}
     </JournalByDateContext.Provider>

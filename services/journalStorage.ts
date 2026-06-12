@@ -6,7 +6,14 @@ const STORAGE_KEY = '@market_journal/journal_days';
 export async function loadJournalDays(): Promise<JournalDay[]> {
   const raw = await AsyncStorage.getItem(STORAGE_KEY);
   if (!raw) return [];
-  return JSON.parse(raw) as JournalDay[];
+
+  const days = JSON.parse(raw) as JournalDay[];
+  // Trades saved before the open/closed status existed always had an exit
+  // price, so they're equivalent to closed trades.
+  return days.map((day) => ({
+    ...day,
+    trades: day.trades.map((trade) => ({ ...trade, status: trade.status ?? 'closed' })),
+  }));
 }
 
 export async function saveJournalDays(days: JournalDay[]): Promise<void> {

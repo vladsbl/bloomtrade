@@ -15,14 +15,17 @@ interface RawPosition {
 }
 
 /**
- * Aggregate all journal trades into one open position per asset:
+ * Aggregate trades with status "open" into one position per asset:
  * net signed quantity, weighted-average entry price, and the latest trade date.
+ * Closed trades don't contribute to open positions — see calculateRealizedPnl.
  */
-function aggregateTrades(days: Record<string, JournalDay>): RawPosition[] {
+function aggregateOpenTrades(days: Record<string, JournalDay>): RawPosition[] {
   const bySymbol = new Map<string, RawPosition>();
 
   for (const day of Object.values(days)) {
     for (const trade of day.trades) {
+      if (trade.status !== 'open') continue;
+
       const asset = trade.symbol.toUpperCase();
       const sign = trade.direction === 'LONG' ? 1 : -1;
 
@@ -42,12 +45,27 @@ function aggregateTrades(days: Record<string, JournalDay>): RawPosition[] {
   return Array.from(bySymbol.values()).filter((raw) => Math.abs(raw.signedQty) > QTY_EPSILON);
 }
 
+/** Sum the realized P&L of every closed trade across the journal. */
+function calculateRealizedPnl(days: Record<string, JournalDay>): number {
+  let total = 0;
+
+  for (const day of Object.values(days)) {
+    for (const trade of day.trades) {
+      if (trade.status !== 'closed' || trade.exitPrice === undefined) continue;
+      const sign = trade.direction === 'LONG' ? 1 : -1;
+      total += (trade.exitPrice - trade.entryPrice) * trade.quantity * sign;
+    }
+  }
+
+  return total;
+}
+
 /**
  * Build the live portfolio from the trading journal: derives positions, fetches
  * current prices in parallel, and computes per-position and total P&L.
  */
 export async function getPortfolio(days: Record<string, JournalDay>): Promise<PortfolioSummary> {
-  const rawPositions = aggregateTrades(days);
+  const rawPositions = aggregateOpenTrades(days);
 
   const quotes = await getStockQuotes(rawPositions.map((raw) => raw.asset));
   const priceBySymbol = new Map(quotes.map((quote) => [quote.symbol, quote.currentPrice]));
@@ -67,13 +85,13 @@ export async function getPortfolio(days: Record<string, JournalDay>): Promise<Po
         entryPrice,
         currentPrice: null,
         marketValue: 0,
-        pnl: 0,
-        pnlPercent: 0,
+        unrealizedPnl: 0,
+        unrealizedPnlPercent: 0,
         date: raw.latestDate,
       };
     }
 
-    const pnl = (currentPrice - entryPrice) * raw.signedQty;
+    const unrealizedPnl = (currentPrice - entryPrice) * raw.signedQty;
 
     return {
       asset: raw.asset,
@@ -83,8 +101,8 @@ export async function getPortfolio(days: Record<string, JournalDay>): Promise<Po
       entryPrice,
       currentPrice,
       marketValue: currentPrice * Math.abs(raw.signedQty),
-      pnl,
-      pnlPercent: costBasis > 0 ? (pnl / costBasis) * 100 : 0,
+      unrealizedPnl,
+      unrealizedPnlPercent: costBasis > 0 ? (unrealizedPnl / costBasis) * 100 : 0,
       date: raw.latestDate,
     };
   });
@@ -93,19 +111,20 @@ export async function getPortfolio(days: Record<string, JournalDay>): Promise<Po
 
   let totalValue = 0;
   let totalCost = 0;
-  let totalPnl = 0;
+  let totalUnrealizedPnl = 0;
   for (const position of positions) {
     if (position.currentPrice === null) continue;
     totalValue += position.marketValue;
     totalCost += position.entryPrice * Math.abs(position.quantity);
-    totalPnl += position.pnl;
+    totalUnrealizedPnl += position.unrealizedPnl;
   }
 
   return {
     positions,
     totalValue,
     totalCost,
-    totalPnl,
-    totalPnlPercent: totalCost > 0 ? (totalPnl / totalCost) * 100 : 0,
+    totalUnrealizedPnl,
+    totalUnrealizedPnlPercent: totalCost > 0 ? (totalUnrealizedPnl / totalCost) * 100 : 0,
+    totalRealizedPnl: calculateRealizedPnl(days),
   };
 }

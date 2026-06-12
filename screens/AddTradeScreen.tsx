@@ -21,7 +21,7 @@ import { useLanguage } from '../store/i18n';
 import { useJournalByDate } from '../store/journalByDate';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
-import { TradeDirection } from '../types/trade';
+import { TradeDirection, TradeStatus } from '../types/trade';
 
 const ACCESSORY_ID = 'addTradeAccessory';
 
@@ -40,20 +40,26 @@ export default function AddTradeScreen() {
 
   const [symbol, setSymbol] = useState('');
   const [direction, setDirection] = useState<TradeDirection>('LONG');
+  const [status, setStatus] = useState<TradeStatus>('open');
   const [entryPrice, setEntryPrice] = useState('');
   const [exitPrice, setExitPrice] = useState('');
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
 
-  const isValid = symbol.trim() !== '' && entryPrice !== '' && exitPrice !== '' && quantity !== '';
+  const isValid =
+    symbol.trim() !== '' &&
+    entryPrice !== '' &&
+    quantity !== '' &&
+    (status === 'open' || exitPrice !== '');
 
   const handleSave = () => {
     if (!isValid) return;
     addTrade(params.date, {
       symbol: symbol.trim().toUpperCase(),
       direction,
+      status,
       entryPrice: parseFloat(entryPrice),
-      exitPrice: parseFloat(exitPrice),
+      exitPrice: status === 'closed' ? parseFloat(exitPrice) : undefined,
       quantity: parseFloat(quantity),
       notes: notes.trim() || undefined,
     });
@@ -71,7 +77,7 @@ export default function AddTradeScreen() {
       ),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigation, isValid, symbol, direction, entryPrice, exitPrice, quantity, notes]);
+  }, [navigation, isValid, symbol, direction, status, entryPrice, exitPrice, quantity, notes]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -125,6 +131,25 @@ export default function AddTradeScreen() {
             </View>
 
             <View style={styles.field}>
+              <Text style={styles.label}>{t('trade.status')}</Text>
+              <View style={styles.directionRow}>
+                {(['open', 'closed'] as TradeStatus[]).map((s) => (
+                  <Pressable
+                    key={s}
+                    style={[styles.directionButton, status === s && styles.directionButtonActive]}
+                    onPress={() => setStatus(s)}
+                  >
+                    <Text
+                      style={[styles.directionText, status === s && styles.directionTextActive]}
+                    >
+                      {s === 'open' ? t('trade.statusOpen') : t('trade.statusClosed')}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.field}>
               <Text style={styles.label}>{t('trade.entryPrice')}</Text>
               <TextInput
                 style={styles.input}
@@ -137,18 +162,20 @@ export default function AddTradeScreen() {
               />
             </View>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>{t('trade.exitPrice')}</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0.00"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="decimal-pad"
-                inputAccessoryViewID={Platform.OS === 'ios' ? ACCESSORY_ID : undefined}
-                value={exitPrice}
-                onChangeText={setExitPrice}
-              />
-            </View>
+            {status === 'closed' && (
+              <View style={styles.field}>
+                <Text style={styles.label}>{t('trade.exitPrice')}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="0.00"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="decimal-pad"
+                  inputAccessoryViewID={Platform.OS === 'ios' ? ACCESSORY_ID : undefined}
+                  value={exitPrice}
+                  onChangeText={setExitPrice}
+                />
+              </View>
+            )}
 
             <View style={styles.field}>
               <Text style={styles.label}>{t('trade.quantity')}</Text>

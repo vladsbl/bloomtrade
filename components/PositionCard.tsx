@@ -11,7 +11,7 @@ export default function PositionCard({ item }: { item: Position }) {
   const styles = createStyles(colors);
 
   const hasPrice = item.currentPrice !== null;
-  const isUp = item.pnl >= 0;
+  const isUp = item.unrealizedPnl >= 0;
   const pnlColor = isUp ? colors.positive : colors.negative;
   const sign = isUp ? '+' : '';
 
@@ -26,13 +26,14 @@ export default function PositionCard({ item }: { item: Position }) {
         </View>
         {hasPrice ? (
           <View style={styles.pnlBox}>
+            <Text style={styles.pnlLabel}>{t('portfolio.unrealizedPnl')}</Text>
             <Text style={[styles.pnl, { color: pnlColor }]}>
               {sign}
-              {item.pnl.toFixed(2)}
+              {item.unrealizedPnl.toFixed(2)}
             </Text>
             <Text style={[styles.pnlPercent, { color: pnlColor }]}>
               {sign}
-              {item.pnlPercent.toFixed(2)}%
+              {item.unrealizedPnlPercent.toFixed(2)}%
             </Text>
           </View>
         ) : (
@@ -124,6 +125,14 @@ const createStyles = (colors: ColorPalette) =>
     },
     pnlBox: {
       alignItems: 'flex-end',
+    },
+    pnlLabel: {
+      color: colors.textSecondary,
+      fontSize: 10,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+      marginBottom: 3,
     },
     pnl: {
       fontSize: 16,

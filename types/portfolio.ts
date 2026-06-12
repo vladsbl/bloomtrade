@@ -3,18 +3,19 @@ export interface Position {
   apiSymbol: string;
   name: string;
   quantity: number; // net signed quantity (LONG +, SHORT -)
-  entryPrice: number; // weighted-average entry across the asset's trades
+  entryPrice: number; // weighted-average entry across the asset's open trades
   currentPrice: number | null; // null when the price is unavailable
   marketValue: number; // currentPrice * |quantity|
-  pnl: number;
-  pnlPercent: number;
+  unrealizedPnl: number;
+  unrealizedPnlPercent: number;
   date: string; // most recent trade date for the asset (YYYY-MM-DD)
 }
 
 export interface PortfolioSummary {
-  positions: Position[];
+  positions: Position[]; // open positions only
   totalValue: number;
   totalCost: number;
-  totalPnl: number;
-  totalPnlPercent: number;
+  totalUnrealizedPnl: number;
+  totalUnrealizedPnlPercent: number;
+  totalRealizedPnl: number; // from closed trades
 }
