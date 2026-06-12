@@ -162,7 +162,11 @@ export default function MarketScreen() {
                 contentContainerStyle={styles.overviewList}
               >
                 {marketOverview.map((item) => (
-                  <MarketOverviewCard key={item.symbol} item={item} />
+                  <MarketOverviewCard
+                    key={item.symbol}
+                    item={item}
+                    onPress={(symbol) => navigation.navigate('AssetDetail', { symbol })}
+                  />
                 ))}
               </ScrollView>
             </View>
@@ -188,7 +192,12 @@ export default function MarketScreen() {
                 <Text style={styles.emptyText}>{t('market.watchlistEmpty')}</Text>
               ) : (
                 watchlistItems.map((item) => (
-                  <WatchlistCard key={item.symbol} item={item} onRemove={handleRemoveAsset} />
+                  <WatchlistCard
+                    key={item.symbol}
+                    item={item}
+                    onRemove={handleRemoveAsset}
+                    onPress={(symbol) => navigation.navigate('AssetDetail', { symbol })}
+                  />
                 ))
               )}
             </View>

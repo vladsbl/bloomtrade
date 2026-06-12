@@ -9,9 +9,10 @@ import { WatchlistItem } from '../types/market';
 interface WatchlistCardProps {
   item: WatchlistItem;
   onRemove: (symbol: string) => void;
+  onPress?: (symbol: string) => void;
 }
 
-export default function WatchlistCard({ item, onRemove }: WatchlistCardProps) {
+export default function WatchlistCard({ item, onRemove, onPress }: WatchlistCardProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const styles = createStyles(colors);
@@ -21,26 +22,32 @@ export default function WatchlistCard({ item, onRemove }: WatchlistCardProps) {
 
   return (
     <View style={styles.row}>
-      <View style={styles.identity}>
-        <Text style={styles.symbol}>{item.symbol}</Text>
-        <Text style={styles.name} numberOfLines={1}>
-          {item.name}
-        </Text>
-      </View>
+      <Pressable
+        style={styles.main}
+        onPress={onPress ? () => onPress(item.symbol) : undefined}
+        disabled={!onPress}
+      >
+        <View style={styles.identity}>
+          <Text style={styles.symbol}>{item.symbol}</Text>
+          <Text style={styles.name} numberOfLines={1}>
+            {item.name}
+          </Text>
+        </View>
 
-      <View style={styles.values}>
-        {hasQuote ? (
-          <>
-            <Text style={styles.price}>${item.price!.toFixed(2)}</Text>
-            <Text style={[styles.change, { color: isUp ? colors.positive : colors.negative }]}>
-              {isUp ? '+' : ''}
-              {item.changePercent!.toFixed(2)}%
-            </Text>
-          </>
-        ) : (
-          <Text style={styles.unavailable}>{t('market.dataUnavailable')}</Text>
-        )}
-      </View>
+        <View style={styles.values}>
+          {hasQuote ? (
+            <>
+              <Text style={styles.price}>${item.price!.toFixed(2)}</Text>
+              <Text style={[styles.change, { color: isUp ? colors.positive : colors.negative }]}>
+                {isUp ? '+' : ''}
+                {item.changePercent!.toFixed(2)}%
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.unavailable}>{t('market.dataUnavailable')}</Text>
+          )}
+        </View>
+      </Pressable>
 
       <Pressable onPress={() => onRemove(item.symbol)} hitSlop={8} style={styles.removeButton}>
         <Ionicons name="close-circle-outline" size={20} color={colors.textSecondary} />
@@ -61,6 +68,11 @@ const createStyles = (colors: ColorPalette) =>
       paddingHorizontal: 14,
       paddingVertical: 12,
       marginBottom: 8,
+    },
+    main: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     identity: {
       flex: 1,

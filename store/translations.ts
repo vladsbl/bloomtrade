@@ -106,6 +106,9 @@ export const en = {
   'alerts.triggered': 'Triggered',
   'alerts.notificationTitle': 'Price alert',
 
+  'assetDetail.title': 'Asset Detail',
+  'assetDetail.fallbackNote': 'Temporary illustrative data — live history unavailable for this asset.',
+
   'brief.title': 'Daily Brief',
   'brief.cardTitle': 'Daily Market Brief',
   'brief.cardSubtitle': "View today's market summary",
@@ -227,6 +230,10 @@ export const fr: Record<TranslationKey, string> = {
   'alerts.empty': 'Aucune alerte de prix',
   'alerts.triggered': 'Déclenchée',
   'alerts.notificationTitle': 'Alerte de prix',
+
+  'assetDetail.title': "Détail de l'actif",
+  'assetDetail.fallbackNote':
+    "Données illustratives temporaires — historique en direct indisponible pour cet actif.",
 
   'brief.title': 'Résumé quotidien',
   'brief.cardTitle': 'Résumé quotidien du marché',

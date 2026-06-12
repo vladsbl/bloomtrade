@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { HistoricalPoint } from '../types/history';
 import { StockQuote } from '../types/quote';
 
 // Public market-data host — no API key, no auth, intended for public consumption.
@@ -44,5 +45,37 @@ export async function getBinanceQuote(apiSymbol: string): Promise<StockQuote> {
     };
   } catch (error) {
     throw new Error(`Impossible de récupérer la cotation Binance pour ${apiSymbol}.`);
+  }
+}
+
+// Binance kline rows are tuples: [openTime, open, high, low, close, ...].
+type BinanceKline = [number, string, string, string, string, ...unknown[]];
+
+/**
+ * Fetch historical close prices for a Binance spot pair.
+ * `interval` is a Binance kline interval (e.g. "15m", "1h", "1d") and `limit`
+ * caps the number of candles returned (max 1000).
+ */
+export async function getBinanceKlines(
+  apiSymbol: string,
+  interval: string,
+  limit: number
+): Promise<HistoricalPoint[]> {
+  try {
+    const { data } = await binanceClient.get<BinanceKline[]>('/api/v3/klines', {
+      params: { symbol: apiSymbol, interval, limit },
+    });
+
+    const points = data
+      .map((kline) => ({
+        time: new Date(kline[0]).toISOString(),
+        price: parseFloat(kline[4]),
+      }))
+      .filter((point) => Number.isFinite(point.price) && point.price > 0);
+
+    if (points.length === 0) throw new Error('empty');
+    return points;
+  } catch (error) {
+    throw new Error(`Impossible de récupérer l'historique Binance pour ${apiSymbol}.`);
   }
 }

@@ -1,11 +1,16 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
 import { MarketOverviewItem } from '../types/market';
 
-export default function MarketOverviewCard({ item }: { item: MarketOverviewItem }) {
+interface MarketOverviewCardProps {
+  item: MarketOverviewItem;
+  onPress?: (symbol: string) => void;
+}
+
+export default function MarketOverviewCard({ item, onPress }: MarketOverviewCardProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const styles = createStyles(colors);
@@ -14,7 +19,11 @@ export default function MarketOverviewCard({ item }: { item: MarketOverviewItem 
   const isUp = (item.changePercent ?? 0) >= 0;
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      style={styles.card}
+      onPress={onPress ? () => onPress(item.symbol) : undefined}
+      disabled={!onPress}
+    >
       <Text style={styles.name} numberOfLines={1}>
         {item.displayName}
       </Text>
@@ -29,7 +38,7 @@ export default function MarketOverviewCard({ item }: { item: MarketOverviewItem 
       ) : (
         <Text style={styles.unavailable}>{t('market.dataUnavailable')}</Text>
       )}
-    </View>
+    </Pressable>
   );
 }
 

@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import AssetDetailScreen from '../screens/AssetDetailScreen';
 import BriefScreen from '../screens/BriefScreen';
 import MarketScreen from '../screens/MarketScreen';
 import NewsDetailScreen from '../screens/NewsDetailScreen';
@@ -11,6 +12,7 @@ export type MarketStackParamList = {
   MarketFeed: undefined;
   NewsDetail: { article: NewsItem };
   Brief: undefined;
+  AssetDetail: { symbol: string };
 };
 
 const Stack = createNativeStackNavigator<MarketStackParamList>();
@@ -34,6 +36,11 @@ export default function MarketStack() {
         options={{ title: t('market.newsDetail') }}
       />
       <Stack.Screen name="Brief" component={BriefScreen} options={{ title: t('brief.title') }} />
+      <Stack.Screen
+        name="AssetDetail"
+        component={AssetDetailScreen}
+        options={{ title: t('assetDetail.title') }}
+      />
     </Stack.Navigator>
   );
 }
