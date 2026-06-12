@@ -76,6 +76,10 @@ export default function PortfolioScreen() {
                 {summary.totalPnlPercent.toFixed(2)}%
               </Text>
             </View>
+            <View style={styles.openPositionsRow}>
+              <Text style={styles.summaryLabel}>{t('portfolio.openPositions')}</Text>
+              <Text style={styles.openPositionsValue}>{summary.positions.length}</Text>
+            </View>
           </View>
         }
         ListEmptyComponent={
@@ -138,6 +142,20 @@ const createStyles = (colors: ColorPalette) =>
     summaryPnlPercent: {
       fontSize: 15,
       fontWeight: '700',
+    },
+    openPositionsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 16,
+      paddingTop: 16,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+    },
+    openPositionsValue: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '800',
     },
     empty: {
       alignItems: 'center',

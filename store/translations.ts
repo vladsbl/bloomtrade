@@ -30,6 +30,7 @@ export const en = {
   'assetType.crypto': 'Crypto',
   'assetType.index': 'Index',
   'assetType.commodity': 'Commodity',
+  'assetType.forex': 'Forex',
 
   'newsDetail.expandedSummary': 'Expanded Summary',
   'newsDetail.context': 'Context',
@@ -81,6 +82,7 @@ export const en = {
 
   'portfolio.title': 'Portfolio',
   'portfolio.totalValue': 'Total Portfolio Value',
+  'portfolio.openPositions': 'Open Positions',
   'portfolio.quantity': 'Qty',
   'portfolio.avgEntry': 'Avg Entry',
   'portfolio.current': 'Current',
@@ -98,6 +100,8 @@ export const en = {
   'alerts.notificationTitle': 'Price alert',
 
   'brief.title': 'Daily Brief',
+  'brief.cardTitle': 'Daily Market Brief',
+  'brief.cardSubtitle': "View today's market summary",
   'brief.marketOverview': 'Market Overview',
   'brief.insights': 'Insights',
   'brief.topNews': 'Top News',
@@ -140,6 +144,7 @@ export const fr: Record<TranslationKey, string> = {
   'assetType.crypto': 'Crypto',
   'assetType.index': 'Indice',
   'assetType.commodity': 'Matière première',
+  'assetType.forex': 'Devises',
 
   'newsDetail.expandedSummary': 'Résumé détaillé',
   'newsDetail.context': 'Contexte',
@@ -191,6 +196,7 @@ export const fr: Record<TranslationKey, string> = {
 
   'portfolio.title': 'Portefeuille',
   'portfolio.totalValue': 'Valeur totale du portefeuille',
+  'portfolio.openPositions': 'Positions ouvertes',
   'portfolio.quantity': 'Qté',
   'portfolio.avgEntry': 'Entrée moy.',
   'portfolio.current': 'Actuel',
@@ -209,6 +215,8 @@ export const fr: Record<TranslationKey, string> = {
   'alerts.notificationTitle': 'Alerte de prix',
 
   'brief.title': 'Résumé quotidien',
+  'brief.cardTitle': 'Résumé quotidien du marché',
+  'brief.cardSubtitle': "Consultez le résumé du marché du jour",
   'brief.marketOverview': "Vue d'ensemble",
   'brief.insights': 'Analyses',
   'brief.topNews': 'Actualités principales',

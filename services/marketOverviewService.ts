@@ -3,7 +3,7 @@ import { resolveAsset } from './assetRegistry';
 import { MarketOverviewItem } from '../types/market';
 
 // UI symbols only — names, API symbols and data sources are resolved through the registry.
-const MARKET_OVERVIEW_SYMBOLS = ['SPY', 'QQQ', 'DIA', 'BTC', 'ETH', 'XAUUSD'];
+const MARKET_OVERVIEW_SYMBOLS = ['SPY', 'QQQ', 'DIA', 'BTC', 'ETH', 'XAUUSD', 'XAUEUR'];
 
 export async function getMarketOverview(): Promise<MarketOverviewItem[]> {
   const quotes = await getStockQuotes(MARKET_OVERVIEW_SYMBOLS);

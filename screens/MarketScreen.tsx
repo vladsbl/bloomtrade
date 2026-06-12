@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AssetSearchInput from '../components/AssetSearchInput';
+import DailyBriefCard from '../components/DailyBriefCard';
 import MarketOverviewCard from '../components/MarketOverviewCard';
 import NewsCard from '../components/NewsCard';
 import TopMoversCard from '../components/TopMoversCard';
@@ -147,18 +148,11 @@ export default function MarketScreen() {
         ListHeaderComponent={
           <View>
             <View style={styles.header}>
-              <View style={styles.headerTop}>
-                <Text style={styles.title}>{t('market.title')}</Text>
-                <Pressable
-                  style={styles.briefButton}
-                  onPress={() => navigation.navigate('Brief')}
-                >
-                  <Ionicons name="newspaper-outline" size={16} color={colors.primary} />
-                  <Text style={styles.briefButtonText}>{t('brief.title')}</Text>
-                </Pressable>
-              </View>
+              <Text style={styles.title}>{t('market.title')}</Text>
               <Text style={styles.date}>{todayLabel}</Text>
             </View>
+
+            <DailyBriefCard onPress={() => navigation.navigate('Brief')} />
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('market.overview')}</Text>
@@ -237,31 +231,10 @@ const createStyles = (colors: ColorPalette) =>
       paddingTop: 12,
       paddingBottom: 16,
     },
-    headerTop: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
     title: {
       color: colors.text,
       fontSize: 26,
       fontWeight: '800',
-    },
-    briefButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: 12,
-      paddingVertical: 7,
-      borderRadius: 8,
-    },
-    briefButtonText: {
-      color: colors.primary,
-      fontSize: 13,
-      fontWeight: '700',
     },
     date: {
       color: colors.textSecondary,

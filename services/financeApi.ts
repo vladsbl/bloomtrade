@@ -3,6 +3,7 @@ import { resolveAsset } from './assetRegistry';
 import { getBinanceQuote } from './binanceApi';
 import { detectPrimaryAsset } from './assetDetection';
 import { analyzeSentiment, calculateImpactScore, getImpactLevel } from './sentiment';
+import { computeSyntheticQuote } from './syntheticAssets';
 import { NewsItem } from '../types/news';
 import { StockQuote } from '../types/quote';
 
@@ -44,6 +45,11 @@ interface FinnhubNewsItem {
  */
 export async function getStockQuote(symbol: string): Promise<StockQuote> {
   const asset = resolveAsset(symbol);
+
+  if (asset.source === 'synthetic') {
+    const quote = await computeSyntheticQuote(asset.symbol, getStockQuote);
+    return { ...quote, symbol: asset.symbol };
+  }
 
   const quote =
     asset.source === 'binance'

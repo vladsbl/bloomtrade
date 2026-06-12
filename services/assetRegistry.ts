@@ -18,6 +18,13 @@ const ASSETS: Asset[] = [
   // Commodities — PAX Gold (1 PAXG = 1 fine troy ounce) tracks spot gold in USD
   { symbol: 'XAUUSD', apiSymbol: 'PAXGUSDT', name: 'Gold', type: 'commodity', source: 'binance' },
 
+  // Forex (Binance USDT-quoted pairs used as USD proxies)
+  { symbol: 'EURUSD', apiSymbol: 'EURUSDT', name: 'Euro / US Dollar', type: 'forex', source: 'binance' },
+
+  // Synthetic assets — derived from other registry entries above,
+  // see services/syntheticAssets.ts
+  { symbol: 'XAUEUR', apiSymbol: 'XAUEUR', name: 'Gold (EUR)', type: 'commodity', source: 'synthetic' },
+
   // Stocks
   { symbol: 'AAPL', apiSymbol: 'AAPL', name: 'Apple', type: 'stock', source: 'finnhub' },
   { symbol: 'MSFT', apiSymbol: 'MSFT', name: 'Microsoft', type: 'stock', source: 'finnhub' },
