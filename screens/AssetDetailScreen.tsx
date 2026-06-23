@@ -76,6 +76,7 @@ export default function AssetDetailScreen() {
           points={series?.points ?? []}
           loading={chartLoading}
           color={hasQuote ? changeColor : undefined}
+          range={range}
         />
 
         <View style={styles.rangeRow}>
