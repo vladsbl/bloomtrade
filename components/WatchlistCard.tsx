@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
@@ -15,6 +16,7 @@ interface WatchlistCardProps {
 export default function WatchlistCard({ item, onRemove, onPress }: WatchlistCardProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
   const styles = createStyles(colors);
 
   const hasQuote = item.price !== null && item.changePercent !== null;
@@ -37,7 +39,7 @@ export default function WatchlistCard({ item, onRemove, onPress }: WatchlistCard
         <View style={styles.values}>
           {hasQuote ? (
             <>
-              <Text style={styles.price}>${item.price!.toFixed(2)}</Text>
+              <Text style={styles.price}>{formatPrice(item.price!, item.symbol)}</Text>
               <Text style={[styles.change, { color: isUp ? colors.positive : colors.negative }]}>
                 {isUp ? '+' : ''}
                 {item.changePercent!.toFixed(2)}%

@@ -7,6 +7,7 @@ import { MarketStackParamList } from '../navigation/MarketStack';
 import { resolveAsset } from '../services/assetRegistry';
 import { getStockQuote } from '../services/financeApi';
 import { getHistoricalPrices } from '../services/historicalPriceService';
+import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
@@ -18,6 +19,7 @@ type AssetDetailRouteProp = RouteProp<MarketStackParamList, 'AssetDetail'>;
 export default function AssetDetailScreen() {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
   const styles = createStyles(colors);
 
   const { params } = useRoute<AssetDetailRouteProp>();
@@ -60,10 +62,11 @@ export default function AssetDetailScreen() {
         <View style={styles.priceBlock}>
           {hasQuote ? (
             <>
-              <Text style={styles.price}>${formatPrice(quote!.currentPrice)}</Text>
+              <Text style={styles.price}>{formatPrice(quote!.currentPrice, params.symbol)}</Text>
               <Text style={[styles.change, { color: changeColor }]}>
                 {isUp ? '+' : ''}
-                {quote!.change.toFixed(2)} ({isUp ? '+' : ''}
+                {formatPrice(quote!.change, params.symbol, { withSymbol: false, compact: false })} (
+                {isUp ? '+' : ''}
                 {quote!.percentChange.toFixed(2)}%)
               </Text>
             </>
@@ -77,6 +80,7 @@ export default function AssetDetailScreen() {
           loading={chartLoading}
           color={hasQuote ? changeColor : undefined}
           range={range}
+          symbol={params.symbol}
         />
 
         <View style={styles.rangeRow}>
@@ -95,12 +99,6 @@ export default function AssetDetailScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-function formatPrice(price: number): string {
-  return price >= 1000
-    ? price.toLocaleString('en-US', { maximumFractionDigits: 0 })
-    : price.toFixed(2);
 }
 
 const createStyles = (colors: ColorPalette) =>

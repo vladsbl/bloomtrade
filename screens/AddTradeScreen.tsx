@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { JournalStackParamList } from '../navigation/JournalStack';
+import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
 import { useJournalByDate } from '../store/journalByDate';
 import { useTheme } from '../store/theme';
@@ -36,6 +37,7 @@ export default function AddTradeScreen() {
   const navigation = useNavigation<AddTradeNavigationProp>();
   const { params } = useRoute<AddTradeRouteProp>();
   const { addTrade } = useJournalByDate();
+  const { toNative, symbolForAsset } = useCurrency();
   const headerHeight = useHeaderHeight();
 
   const [symbol, setSymbol] = useState('');
@@ -54,17 +56,23 @@ export default function AddTradeScreen() {
 
   const handleSave = () => {
     if (!isValid) return;
+    const tradeSymbol = symbol.trim().toUpperCase();
+    // Prices are typed in the displayed currency; store them in the asset's
+    // native currency so portfolio math stays consistent with live quotes.
     addTrade(params.date, {
-      symbol: symbol.trim().toUpperCase(),
+      symbol: tradeSymbol,
       direction,
       status,
-      entryPrice: parseFloat(entryPrice),
-      exitPrice: status === 'closed' ? parseFloat(exitPrice) : undefined,
+      entryPrice: toNative(parseFloat(entryPrice), tradeSymbol),
+      exitPrice: status === 'closed' ? toNative(parseFloat(exitPrice), tradeSymbol) : undefined,
       quantity: parseFloat(quantity),
       notes: notes.trim() || undefined,
     });
     navigation.goBack();
   };
+
+  // Currency the typed prices are interpreted in (follows the typed symbol).
+  const inputCurrencySymbol = symbolForAsset(symbol.trim().toUpperCase());
 
   useEffect(() => {
     navigation.setOptions({
@@ -150,7 +158,9 @@ export default function AddTradeScreen() {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>{t('trade.entryPrice')}</Text>
+              <Text style={styles.label}>
+                {t('trade.entryPrice')} ({inputCurrencySymbol})
+              </Text>
               <TextInput
                 style={styles.input}
                 placeholder="0.00"
@@ -164,7 +174,9 @@ export default function AddTradeScreen() {
 
             {status === 'closed' && (
               <View style={styles.field}>
-                <Text style={styles.label}>{t('trade.exitPrice')}</Text>
+                <Text style={styles.label}>
+                  {t('trade.exitPrice')} ({inputCurrencySymbol})
+                </Text>
                 <TextInput
                   style={styles.input}
                   placeholder="0.00"

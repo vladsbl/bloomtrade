@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
+import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
@@ -20,15 +21,18 @@ interface PriceChartProps {
   color?: string;
   // Used to decide whether the scrubber tooltip shows a time alongside the date.
   range?: HistoryRange;
+  // Asset symbol — lets the scrubber tooltip show the price in the right currency.
+  symbol?: string;
 }
 
 const DEFAULT_HEIGHT = 220;
 const V_PADDING = 12;
 const TOOLTIP_WIDTH = 132;
 
-export default function PriceChart({ points, loading, height = DEFAULT_HEIGHT, color, range }: PriceChartProps) {
+export default function PriceChart({ points, loading, height = DEFAULT_HEIGHT, color, range, symbol }: PriceChartProps) {
   const { colors } = useTheme();
   const { t, language } = useLanguage();
+  const { formatPrice } = useCurrency();
   const styles = createStyles(colors);
 
   const [width, setWidth] = useState(0);
@@ -125,7 +129,9 @@ export default function PriceChart({ points, loading, height = DEFAULT_HEIGHT, c
         </Svg>
         {active && (
           <View pointerEvents="none" style={[styles.tooltip, { left: tooltipLeft }]}>
-            <Text style={styles.tooltipPrice}>${formatTooltipPrice(active.price)}</Text>
+            <Text style={styles.tooltipPrice}>
+              {symbol ? formatPrice(active.price, symbol) : `$${formatTooltipPrice(active.price)}`}
+            </Text>
             <Text style={styles.tooltipTime}>{formatPointLabel(active.time, range, language)}</Text>
           </View>
         )}

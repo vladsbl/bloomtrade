@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import TradeStatusBadge from './TradeStatusBadge';
+import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
@@ -15,6 +16,7 @@ export default function TradeCard({
 }) {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
   const styles = createStyles(colors);
 
   const isClosed = trade.status === 'closed' && trade.exitPrice !== undefined;
@@ -32,14 +34,14 @@ export default function TradeCard({
           </View>
           <Text style={styles.meta}>
             {trade.direction === 'LONG' ? t('trade.long') : t('trade.short')} ·{' '}
-            {trade.quantity} @ {trade.entryPrice}
-            {isClosed ? ` → ${trade.exitPrice}` : ''}
+            {trade.quantity} @ {formatPrice(trade.entryPrice, trade.symbol)}
+            {isClosed ? ` → ${formatPrice(trade.exitPrice!, trade.symbol)}` : ''}
           </Text>
         </View>
         {pnl !== null && (
           <Text style={[styles.pnl, { color: isPositive ? colors.positive : colors.negative }]}>
             {isPositive ? '+' : ''}
-            {pnl.toFixed(2)}
+            {formatPrice(pnl, trade.symbol, { withSymbol: false, compact: false })}
           </Text>
         )}
       </View>

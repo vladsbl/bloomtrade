@@ -1,3 +1,5 @@
+import { Currency } from './currency';
+
 export type AssetType = 'stock' | 'crypto' | 'index' | 'commodity' | 'forex';
 
 // Which upstream API serves quotes for an asset.
@@ -12,4 +14,10 @@ export interface Asset {
   name: string;
   type: AssetType;
   source: AssetSource;
+  // Currency the upstream feed prices this asset in. Defaults to USD.
+  quoteCurrency?: Currency;
+  // When true, the asset is always displayed in quoteCurrency and is exempt
+  // from the global $/€ toggle — its symbol already names a currency
+  // (e.g. XAUEUR, XAUUSD, BTCEUR, EURUSD).
+  pinnedCurrency?: boolean;
 }

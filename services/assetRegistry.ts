@@ -1,4 +1,5 @@
 import { Asset } from '../types/asset';
+import { Currency } from '../types/currency';
 
 // Single source of truth mapping UI symbols to their upstream API symbols.
 // Stocks/ETFs use Finnhub; crypto and commodities use Binance's public API
@@ -12,18 +13,18 @@ const ASSETS: Asset[] = [
 
   // Crypto (Binance spot pairs)
   { symbol: 'BTC', apiSymbol: 'BTCUSDT', name: 'Bitcoin', type: 'crypto', source: 'binance' },
-  { symbol: 'BTCEUR', apiSymbol: 'BTCEUR', name: 'Bitcoin EUR', type: 'crypto', source: 'binance' },
+  { symbol: 'BTCEUR', apiSymbol: 'BTCEUR', name: 'Bitcoin EUR', type: 'crypto', source: 'binance', quoteCurrency: 'EUR', pinnedCurrency: true },
   { symbol: 'ETH', apiSymbol: 'ETHUSDT', name: 'Ethereum', type: 'crypto', source: 'binance' },
 
   // Commodities — PAX Gold (1 PAXG = 1 fine troy ounce) tracks spot gold in USD
-  { symbol: 'XAUUSD', apiSymbol: 'PAXGUSDT', name: 'Gold', type: 'commodity', source: 'binance' },
+  { symbol: 'XAUUSD', apiSymbol: 'PAXGUSDT', name: 'Gold', type: 'commodity', source: 'binance', quoteCurrency: 'USD', pinnedCurrency: true },
 
   // Forex (Binance USDT-quoted pairs used as USD proxies)
-  { symbol: 'EURUSD', apiSymbol: 'EURUSDT', name: 'Euro / US Dollar', type: 'forex', source: 'binance' },
+  { symbol: 'EURUSD', apiSymbol: 'EURUSDT', name: 'Euro / US Dollar', type: 'forex', source: 'binance', quoteCurrency: 'USD', pinnedCurrency: true },
 
   // Synthetic assets — derived from other registry entries above,
   // see services/syntheticAssets.ts
-  { symbol: 'XAUEUR', apiSymbol: 'XAUEUR', name: 'Gold (EUR)', type: 'commodity', source: 'synthetic' },
+  { symbol: 'XAUEUR', apiSymbol: 'XAUEUR', name: 'Gold (EUR)', type: 'commodity', source: 'synthetic', quoteCurrency: 'EUR', pinnedCurrency: true },
 
   // Stocks
   { symbol: 'AAPL', apiSymbol: 'AAPL', name: 'Apple', type: 'stock', source: 'finnhub' },
@@ -65,4 +66,22 @@ export function toUiSymbol(symbol: string): string {
 /** All registered assets — used by the asset search. */
 export function getAllAssets(): Asset[] {
   return [...ASSETS];
+}
+
+export interface AssetCurrencyInfo {
+  native: Currency; // currency the stored/feed value is expressed in
+  pinned: boolean; // exempt from the global $/€ display toggle
+}
+
+/**
+ * Currency metadata for an asset. Unknown/most assets are quoted in USD and
+ * follow the global toggle; currency-named pairs (XAUEUR, XAUUSD, …) are pinned
+ * to their own currency.
+ */
+export function getAssetCurrency(symbol: string): AssetCurrencyInfo {
+  const asset = resolveAsset(symbol);
+  return {
+    native: asset.quoteCurrency ?? 'USD',
+    pinned: asset.pinnedCurrency ?? false,
+  };
 }

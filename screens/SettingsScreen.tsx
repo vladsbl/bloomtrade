@@ -1,13 +1,16 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCurrency } from '../store/currency';
 import { Language, useLanguage } from '../store/i18n';
 import { ThemeMode, useTheme } from '../store/theme';
+import { Currency } from '../types/currency';
 import { ColorPalette } from '../theme/palettes';
 
 export default function SettingsScreen() {
   const { colors, mode, setTheme } = useTheme();
   const { t, language, setLanguage } = useLanguage();
+  const { currency, setCurrency } = useCurrency();
   const styles = createStyles(colors);
 
   const themeOptions: { value: ThemeMode; label: string }[] = [
@@ -18,6 +21,11 @@ export default function SettingsScreen() {
   const languageOptions: { value: Language; label: string }[] = [
     { value: 'fr', label: t('settings.french') },
     { value: 'en', label: t('settings.english') },
+  ];
+
+  const currencyOptions: { value: Currency; label: string }[] = [
+    { value: 'USD', label: t('settings.currencyUsd') },
+    { value: 'EUR', label: t('settings.currencyEur') },
   ];
 
   return (
@@ -59,6 +67,28 @@ export default function SettingsScreen() {
                   style={[
                     styles.optionText,
                     language === option.value && styles.optionTextActive,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.currency')}</Text>
+          <View style={styles.optionRow}>
+            {currencyOptions.map((option) => (
+              <Pressable
+                key={option.value}
+                style={[styles.option, currency === option.value && styles.optionActive]}
+                onPress={() => setCurrency(option.value)}
+              >
+                <Text
+                  style={[
+                    styles.optionText,
+                    currency === option.value && styles.optionTextActive,
                   ]}
                 >
                   {option.label}

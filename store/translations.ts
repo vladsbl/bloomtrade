@@ -84,6 +84,9 @@ export const en = {
   'settings.language': 'Language',
   'settings.french': 'French',
   'settings.english': 'English',
+  'settings.currency': 'Currency',
+  'settings.currencyUsd': 'US Dollar ($)',
+  'settings.currencyEur': 'Euro (€)',
 
   'portfolio.title': 'Portfolio',
   'portfolio.totalValue': 'Total Portfolio Value',
@@ -208,6 +211,9 @@ export const fr: Record<TranslationKey, string> = {
   'settings.language': 'Langue',
   'settings.french': 'Français',
   'settings.english': 'Anglais',
+  'settings.currency': 'Devise',
+  'settings.currencyUsd': 'Dollar US ($)',
+  'settings.currencyEur': 'Euro (€)',
 
   'portfolio.title': 'Portefeuille',
   'portfolio.totalValue': 'Valeur totale du portefeuille',

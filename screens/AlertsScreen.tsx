@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AssetSearchInput from '../components/AssetSearchInput';
 import { useAlerts } from '../store/alerts';
+import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 import { Asset } from '../types/asset';
@@ -21,6 +22,7 @@ import { ColorPalette } from '../theme/palettes';
 export default function AlertsScreen() {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { toNative, symbolForAsset } = useCurrency();
   const styles = createStyles(colors);
 
   const { alerts, addAlert, removeAlert, toggleAlert } = useAlerts();
@@ -46,7 +48,9 @@ export default function AlertsScreen() {
       apiSymbol: selectedAsset.apiSymbol,
       name: selectedAsset.name,
       condition,
-      targetPrice: price,
+      // Stored in the asset's native currency so it matches live quotes; the
+      // user types it in the currently displayed currency.
+      targetPrice: toNative(price, selectedAsset.symbol),
     });
     resetForm();
   };
@@ -118,7 +122,7 @@ export default function AlertsScreen() {
 
                   <TextInput
                     style={styles.priceInput}
-                    placeholder={t('alerts.targetPrice')}
+                    placeholder={`${t('alerts.targetPrice')} (${symbolForAsset(selectedAsset.symbol)})`}
                     placeholderTextColor={colors.textSecondary}
                     keyboardType="decimal-pad"
                     value={targetPrice}
@@ -160,13 +164,14 @@ function AlertRow({
   onToggle: () => void;
   onRemove: () => void;
 }) {
+  const { formatPrice } = useCurrency();
   const styles = createStyles(colors);
   return (
     <View style={styles.row}>
       <View style={styles.rowInfo}>
         <Text style={styles.rowSymbol}>{alert.symbol}</Text>
         <Text style={styles.rowCondition}>
-          {conditionLabel} ${alert.targetPrice}
+          {conditionLabel} {formatPrice(alert.targetPrice, alert.symbol)}
         </Text>
         {alert.triggeredAt && <Text style={styles.rowTriggered}>{triggeredLabel}</Text>}
       </View>

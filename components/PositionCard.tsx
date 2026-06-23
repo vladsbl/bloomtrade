@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
@@ -8,6 +9,7 @@ import { Position } from '../types/portfolio';
 export default function PositionCard({ item }: { item: Position }) {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
   const styles = createStyles(colors);
 
   const hasPrice = item.currentPrice !== null;
@@ -29,7 +31,7 @@ export default function PositionCard({ item }: { item: Position }) {
             <Text style={styles.pnlLabel}>{t('portfolio.unrealizedPnl')}</Text>
             <Text style={[styles.pnl, { color: pnlColor }]}>
               {sign}
-              {item.unrealizedPnl.toFixed(2)}
+              {formatPrice(item.unrealizedPnl, item.asset, { withSymbol: false, compact: false })}
             </Text>
             <Text style={[styles.pnlPercent, { color: pnlColor }]}>
               {sign}
@@ -45,17 +47,17 @@ export default function PositionCard({ item }: { item: Position }) {
         <Metric label={t('portfolio.quantity')} value={formatQty(item.quantity)} colors={colors} />
         <Metric
           label={t('portfolio.avgEntry')}
-          value={`$${item.entryPrice.toFixed(2)}`}
+          value={formatPrice(item.entryPrice, item.asset)}
           colors={colors}
         />
         <Metric
           label={t('portfolio.current')}
-          value={hasPrice ? `$${item.currentPrice!.toFixed(2)}` : '—'}
+          value={hasPrice ? formatPrice(item.currentPrice!, item.asset) : '—'}
           colors={colors}
         />
         <Metric
           label={t('portfolio.value')}
-          value={hasPrice ? `$${formatValue(item.marketValue)}` : '—'}
+          value={hasPrice ? formatPrice(item.marketValue, item.asset) : '—'}
           colors={colors}
         />
       </View>
@@ -84,12 +86,6 @@ function Metric({
 function formatQty(qty: number): string {
   const rounded = Math.round(qty * 1e6) / 1e6;
   return rounded.toString();
-}
-
-function formatValue(value: number): string {
-  return value >= 1000
-    ? value.toLocaleString('en-US', { maximumFractionDigits: 0 })
-    : value.toFixed(2);
 }
 
 const createStyles = (colors: ColorPalette) =>

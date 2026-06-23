@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PositionCard from '../components/PositionCard';
 import { getPortfolio } from '../services/portfolioService';
+import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
 import { useJournalByDate } from '../store/journalByDate';
 import { useTheme } from '../store/theme';
@@ -21,6 +22,7 @@ const EMPTY_SUMMARY: PortfolioSummary = {
 export default function PortfolioScreen() {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { formatBase } = useCurrency();
   const styles = createStyles(colors);
 
   const { days } = useJournalByDate();
@@ -71,10 +73,11 @@ export default function PortfolioScreen() {
         ListHeaderComponent={
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>{t('portfolio.totalValue')}</Text>
-            <Text style={styles.summaryValue}>${formatMoney(summary.totalValue)}</Text>
+            <Text style={styles.summaryValue}>{formatBase(summary.totalValue)}</Text>
             <View style={styles.pnlRow}>
               <Text style={[styles.summaryPnl, { color: pnlColor }]}>
-                {sign}${formatMoney(Math.abs(summary.totalUnrealizedPnl))}
+                {sign}
+                {formatBase(Math.abs(summary.totalUnrealizedPnl))}
               </Text>
               <Text style={[styles.summaryPnlPercent, { color: pnlColor }]}>
                 {sign}
@@ -89,7 +92,8 @@ export default function PortfolioScreen() {
               <View style={[styles.extraStatsRow, styles.extraStatsRowSpacing]}>
                 <Text style={styles.summaryLabel}>{t('portfolio.realizedPnl')}</Text>
                 <Text style={[styles.extraStatsValue, { color: realizedColor }]}>
-                  {realizedSign}${formatMoney(Math.abs(summary.totalRealizedPnl))}
+                  {realizedSign}
+                  {formatBase(Math.abs(summary.totalRealizedPnl))}
                 </Text>
               </View>
             </View>
@@ -103,10 +107,6 @@ export default function PortfolioScreen() {
       />
     </SafeAreaView>
   );
-}
-
-function formatMoney(value: number): string {
-  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 const createStyles = (colors: ColorPalette) =>

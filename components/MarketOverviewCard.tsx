@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
@@ -13,6 +14,7 @@ interface MarketOverviewCardProps {
 export default function MarketOverviewCard({ item, onPress }: MarketOverviewCardProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
   const styles = createStyles(colors);
 
   const hasData = item.price !== null && item.changePercent !== null;
@@ -29,7 +31,7 @@ export default function MarketOverviewCard({ item, onPress }: MarketOverviewCard
       </Text>
       {hasData ? (
         <>
-          <Text style={styles.price}>${formatPrice(item.price!)}</Text>
+          <Text style={styles.price}>{formatPrice(item.price!, item.symbol)}</Text>
           <Text style={[styles.change, { color: isUp ? colors.positive : colors.negative }]}>
             {isUp ? '+' : ''}
             {item.changePercent!.toFixed(2)}%
@@ -40,12 +42,6 @@ export default function MarketOverviewCard({ item, onPress }: MarketOverviewCard
       )}
     </Pressable>
   );
-}
-
-function formatPrice(price: number): string {
-  return price >= 1000
-    ? price.toLocaleString('en-US', { maximumFractionDigits: 0 })
-    : price.toFixed(2);
 }
 
 const createStyles = (colors: ColorPalette) =>

@@ -10,6 +10,7 @@ import React, {
 import { AppState, AppStateStatus } from 'react-native';
 import { checkAlerts, loadAlerts, saveAlerts } from '../services/alertService';
 import { sendLocalNotification } from '../services/notificationService';
+import { useCurrency } from './currency';
 import { useLanguage } from './i18n';
 import { PriceAlert } from '../types/alert';
 
@@ -33,6 +34,7 @@ const AlertsContext = createContext<AlertsContextValue | undefined>(undefined);
 
 export function AlertsProvider({ children }: { children: ReactNode }) {
   const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,7 +71,7 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
         const direction = alert.condition === 'above' ? t('alerts.above') : t('alerts.below');
         await sendLocalNotification(
           t('alerts.notificationTitle'),
-          `${alert.name} (${alert.symbol}) ${direction} $${alert.targetPrice} — $${price.toFixed(2)}`
+          `${alert.name} (${alert.symbol}) ${direction} ${formatPrice(alert.targetPrice, alert.symbol)} — ${formatPrice(price, alert.symbol)}`
         );
       }
 
@@ -83,7 +85,7 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
     } finally {
       checkingRef.current = false;
     }
-  }, [t, commit]);
+  }, [t, commit, formatPrice]);
 
   // Poll while the app is in the foreground; check immediately on resume.
   useEffect(() => {

@@ -16,6 +16,7 @@ import { MarketStackParamList } from '../navigation/MarketStack';
 import { detectRelatedAssets } from '../services/assetDetection';
 import { getStockQuotes } from '../services/financeApi';
 import { expandSummary } from '../services/newsEnhancer';
+import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
@@ -26,6 +27,7 @@ type NewsDetailRouteProp = RouteProp<MarketStackParamList, 'NewsDetail'>;
 export default function NewsDetailScreen() {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
   const styles = createStyles(colors);
 
   const { params } = useRoute<NewsDetailRouteProp>();
@@ -95,7 +97,7 @@ export default function NewsDetailScreen() {
                 <View key={quote.symbol} style={styles.quoteRow}>
                   <Text style={styles.quoteSymbol}>{quote.symbol}</Text>
                   <View style={styles.quoteValues}>
-                    <Text style={styles.quotePrice}>${quote.currentPrice.toFixed(2)}</Text>
+                    <Text style={styles.quotePrice}>{formatPrice(quote.currentPrice, quote.symbol)}</Text>
                     <Text style={[styles.quoteChange, { color: isUp ? colors.positive : colors.negative }]}>
                       {isUp ? '+' : ''}
                       {quote.percentChange.toFixed(2)}%
