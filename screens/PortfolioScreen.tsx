@@ -1,7 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PositionCard from '../components/PositionCard';
+import { JournalStackParamList } from '../navigation/JournalStack';
 import { getPortfolio } from '../services/portfolioService';
 import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
@@ -23,6 +27,7 @@ export default function PortfolioScreen() {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const { formatBase } = useCurrency();
+  const navigation = useNavigation<NativeStackNavigationProp<JournalStackParamList, 'Portfolio'>>();
   const styles = createStyles(colors);
 
   const { days } = useJournalByDate();
@@ -97,6 +102,11 @@ export default function PortfolioScreen() {
                 </Text>
               </View>
             </View>
+
+            <Pressable style={styles.analyticsButton} onPress={() => navigation.navigate('Analytics')}>
+              <Ionicons name="stats-chart-outline" size={16} color="#fff" />
+              <Text style={styles.analyticsButtonText}>{t('analytics.openButton')}</Text>
+            </Pressable>
           </View>
         }
         ListEmptyComponent={
@@ -172,6 +182,21 @@ const createStyles = (colors: ColorPalette) =>
     },
     extraStatsValue: {
       color: colors.text,
+      fontSize: 14,
+      fontWeight: '800',
+    },
+    analyticsButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      marginTop: 16,
+      backgroundColor: colors.primary,
+      borderRadius: 10,
+      paddingVertical: 11,
+    },
+    analyticsButtonText: {
+      color: '#fff',
       fontSize: 14,
       fontWeight: '800',
     },

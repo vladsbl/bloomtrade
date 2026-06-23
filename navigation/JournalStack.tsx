@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import AddTradeScreen from '../screens/AddTradeScreen';
+import AnalyticsScreen from '../screens/AnalyticsScreen';
 import EditJournalNoteScreen from '../screens/EditJournalNoteScreen';
 import JournalScreen from '../screens/JournalScreen';
 import PortfolioScreen from '../screens/PortfolioScreen';
@@ -12,6 +13,7 @@ export type JournalStackParamList = {
   AddTrade: { date: string };
   EditJournalNote: { date: string };
   Portfolio: undefined;
+  Analytics: undefined;
 };
 
 const Stack = createNativeStackNavigator<JournalStackParamList>();
@@ -43,6 +45,11 @@ export default function JournalStack() {
         name="Portfolio"
         component={PortfolioScreen}
         options={{ title: t('portfolio.title') }}
+      />
+      <Stack.Screen
+        name="Analytics"
+        component={AnalyticsScreen}
+        options={{ title: t('analytics.title') }}
       />
     </Stack.Navigator>
   );

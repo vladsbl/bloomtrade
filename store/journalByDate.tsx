@@ -52,12 +52,18 @@ export function JournalByDateProvider({ children }: { children: ReactNode }) {
     (date: string, trade: Omit<Trade, 'id'>) => {
       setDays((prev) => {
         const day = prev[date] ?? emptyDay(date);
+        const now = Date.now();
+        // Stamp openedAt for entry-time analytics; if the trade is logged
+        // already closed, stamp closedAt too so it isn't left dangling.
+        const created: Trade = {
+          ...trade,
+          id: now.toString(),
+          openedAt: trade.openedAt ?? now,
+          closedAt: trade.status === 'closed' ? trade.closedAt ?? now : trade.closedAt,
+        };
         const next = {
           ...prev,
-          [date]: {
-            ...day,
-            trades: [{ ...trade, id: Date.now().toString() }, ...day.trades],
-          },
+          [date]: { ...day, trades: [created, ...day.trades] },
         };
         persist(next);
         return next;
@@ -77,9 +83,16 @@ export function JournalByDateProvider({ children }: { children: ReactNode }) {
           ...prev,
           [date]: {
             ...day,
-            trades: day.trades.map((trade) =>
-              trade.id === tradeId ? { ...trade, ...updates } : trade
-            ),
+            trades: day.trades.map((trade) => {
+              if (trade.id !== tradeId) return trade;
+              const merged = { ...trade, ...updates };
+              // Record the close time on the open → closed transition so the
+              // holding duration can be measured.
+              if (updates.status === 'closed' && trade.status !== 'closed' && merged.closedAt === undefined) {
+                merged.closedAt = Date.now();
+              }
+              return merged;
+            }),
           },
         };
         persist(next);

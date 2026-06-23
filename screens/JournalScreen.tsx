@@ -59,10 +59,16 @@ export default function JournalScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('journal.title')}</Text>
-        <Pressable style={styles.portfolioButton} onPress={() => navigation.navigate('Portfolio')}>
-          <Ionicons name="pie-chart-outline" size={16} color={colors.primary} />
-          <Text style={styles.portfolioButtonText}>{t('portfolio.title')}</Text>
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable style={styles.portfolioButton} onPress={() => navigation.navigate('Analytics')}>
+            <Ionicons name="stats-chart-outline" size={16} color={colors.primary} />
+            <Text style={styles.portfolioButtonText}>{t('analytics.title')}</Text>
+          </Pressable>
+          <Pressable style={styles.portfolioButton} onPress={() => navigation.navigate('Portfolio')}>
+            <Ionicons name="pie-chart-outline" size={16} color={colors.primary} />
+            <Text style={styles.portfolioButtonText}>{t('portfolio.title')}</Text>
+          </Pressable>
+        </View>
       </View>
 
       <FlatList
@@ -132,6 +138,11 @@ const createStyles = (colors: ColorPalette) =>
       alignItems: 'center',
       paddingHorizontal: 16,
       paddingVertical: 12,
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
     },
     title: {
       color: colors.text,
