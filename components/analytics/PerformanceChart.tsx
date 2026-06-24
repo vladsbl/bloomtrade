@@ -7,6 +7,7 @@ import { ColorPalette } from '../../theme/palettes';
 export interface ChartDatum {
   label: string;
   value: number;
+  color?: string; // overrides the +/- color (e.g. histogram bins)
 }
 
 interface PerformanceChartProps {
@@ -76,7 +77,7 @@ function renderBars(
         const y = d.value >= 0 ? baselineY - h : baselineY;
         return (
           <React.Fragment key={`${d.label}-${i}`}>
-            <Rect x={x} y={y} width={barWidth} height={Math.max(h, 0.5)} rx={2} fill={d.value >= 0 ? up : down} />
+            <Rect x={x} y={y} width={barWidth} height={Math.max(h, 0.5)} rx={2} fill={d.color ?? (d.value >= 0 ? up : down)} />
             <SvgText
               x={i * colWidth + colWidth / 2}
               y={height - 5}

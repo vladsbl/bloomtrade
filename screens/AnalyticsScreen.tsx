@@ -7,6 +7,7 @@ import InsightCard from '../components/analytics/InsightCard';
 import MetricCard from '../components/analytics/MetricCard';
 import PerformanceChart, { ChartDatum } from '../components/analytics/PerformanceChart';
 import ScoreCard from '../components/analytics/ScoreCard';
+import { useOpenPositions } from '../hooks/useOpenPositions';
 import { bucketLabel } from '../services/analyticsLabels';
 import { buildAnalytics } from '../services/tradingAnalyticsService';
 import { generateInsights } from '../services/tradingInsightsService';
@@ -15,7 +16,7 @@ import { useLanguage } from '../store/i18n';
 import { useJournalByDate } from '../store/journalByDate';
 import { useTheme } from '../store/theme';
 import { TranslationKey } from '../store/translations';
-import { AssetPerf, InsightTone } from '../types/analytics';
+import { AssetPerf, DirectionStats, InsightTone, TimeStats } from '../types/analytics';
 import { ColorPalette } from '../theme/palettes';
 
 export default function AnalyticsScreen() {
@@ -23,6 +24,7 @@ export default function AnalyticsScreen() {
   const { t } = useLanguage();
   const { formatBase } = useCurrency();
   const { days, loading } = useJournalByDate();
+  const { summary } = useOpenPositions(); // live unrealized P&L
   const styles = createStyles(colors);
 
   const report = useMemo(() => buildAnalytics(days), [days]);
@@ -76,7 +78,12 @@ export default function AnalyticsScreen() {
     { label: t('analytics.metric.grossProfit'), value: money(general.grossProfit), tone: 'positive' },
     { label: t('analytics.metric.grossLoss'), value: money(-general.grossLoss), tone: 'negative' },
     { label: t('analytics.metric.expectancy'), value: money(general.expectancy), tone: toneOf(general.expectancy) },
+    { label: t('analytics.metric.bestTrade'), value: money(general.bestTrade), tone: 'positive' },
+    { label: t('analytics.metric.worstTrade'), value: money(general.worstTrade), tone: 'negative' },
+    { label: t('analytics.metric.unrealizedPnl'), value: money(summary.unrealizedPnl), tone: toneOf(summary.unrealizedPnl) },
     { label: t('analytics.metric.maxDrawdown'), value: money(-risk.maxDrawdown), tone: 'negative' },
+    { label: t('analytics.metric.resultsVolatility'), value: money(risk.resultsVolatility) },
+    { label: t('analytics.metric.avgRisk'), value: money(risk.averageRisk) },
     { label: t('analytics.metric.bestStreak'), value: String(risk.bestWinStreak), tone: 'positive' },
     { label: t('analytics.metric.worstStreak'), value: String(risk.worstLossStreak), tone: 'negative' },
     { label: t('analytics.metric.payoff'), value: ratio(risk.payoffRatio) },
@@ -85,6 +92,10 @@ export default function AnalyticsScreen() {
 
   const weekdayData: ChartDatum[] = time.byWeekday.map((b) => ({
     label: bucketLabel('weekday', b.key, t),
+    value: b.netPnl,
+  }));
+  const weekData: ChartDatum[] = time.byWeek.map((b) => ({
+    label: bucketLabel('week', b.key, t),
     value: b.netPnl,
   }));
   const monthData: ChartDatum[] = time.byMonth.map((b) => ({
@@ -98,6 +109,15 @@ export default function AnalyticsScreen() {
   const equityData: ChartDatum[] = report.equityCurve.map((point) => ({
     label: '',
     value: point.value,
+  }));
+  const assetDistData: ChartDatum[] = report.assets
+    .filter((asset) => asset.closedTrades > 0)
+    .slice(0, 8)
+    .map((asset) => ({ label: asset.symbol, value: asset.netPnl }));
+  const histogramData: ChartDatum[] = report.pnlHistogram.map((bin) => ({
+    label: '',
+    value: bin.count,
+    color: bin.isWin ? colors.positive : colors.negative,
   }));
 
   return (
@@ -130,12 +150,22 @@ export default function AnalyticsScreen() {
               </View>
             </AnalyticsCard>
 
+            {/* Long / Short breakdown */}
+            <Text style={styles.sectionTitle}>{t('analytics.longShort')}</Text>
+            <AnalyticsCard>
+              <View style={styles.directionRow}>
+                <DirectionColumn stats={report.long} colors={colors} money={money} percent={percent} ratio={ratio} t={t} />
+                <View style={styles.directionDivider} />
+                <DirectionColumn stats={report.short} colors={colors} money={money} percent={percent} ratio={ratio} t={t} />
+              </View>
+            </AnalyticsCard>
+
             {/* 3 & 4. Best / worst assets */}
             <Text style={styles.sectionTitle}>{t('analytics.topAssets')}</Text>
             <AnalyticsCard>
               {topAssets.length > 0 ? (
                 topAssets.map((asset) => (
-                  <AssetRow key={asset.symbol} asset={asset} colors={colors} money={money} percent={percent} t={t} />
+                  <AssetRow key={asset.symbol} asset={asset} colors={colors} money={money} percent={percent} duration={duration} t={t} />
                 ))
               ) : (
                 <Text style={styles.noticeText}>{t('analytics.noRanking')}</Text>
@@ -146,7 +176,7 @@ export default function AnalyticsScreen() {
             <AnalyticsCard>
               {worstAssets.length > 0 ? (
                 worstAssets.map((asset) => (
-                  <AssetRow key={asset.symbol} asset={asset} colors={colors} money={money} percent={percent} t={t} />
+                  <AssetRow key={asset.symbol} asset={asset} colors={colors} money={money} percent={percent} duration={duration} t={t} />
                 ))
               ) : (
                 <Text style={styles.noticeText}>{t('analytics.noRanking')}</Text>
@@ -155,9 +185,15 @@ export default function AnalyticsScreen() {
 
             {/* 5. Temporal analysis */}
             <Text style={styles.sectionTitle}>{t('analytics.temporal')}</Text>
+            <RankingsCard time={time} colors={colors} money={money} t={t} />
             <AnalyticsCard title={t('analytics.temporal.byWeekday')}>
               <PerformanceChart data={weekdayData} variant="bars" />
             </AnalyticsCard>
+            {weekData.length > 0 && (
+              <AnalyticsCard title={t('analytics.temporal.byWeek')}>
+                <PerformanceChart data={weekData} variant="bars" />
+              </AnalyticsCard>
+            )}
             {monthData.length > 0 && (
               <AnalyticsCard title={t('analytics.temporal.byMonth')}>
                 <PerformanceChart data={monthData} variant="bars" />
@@ -187,11 +223,33 @@ export default function AnalyticsScreen() {
               )}
             </AnalyticsCard>
 
-            {/* 7. Equity curve */}
+            {/* 7. Visualizations */}
             <Text style={styles.sectionTitle}>{t('analytics.equityCurve')}</Text>
             <AnalyticsCard>
               <PerformanceChart data={equityData} variant="line" />
             </AnalyticsCard>
+
+            {assetDistData.length > 0 && (
+              <AnalyticsCard title={t('analytics.assetDistribution')}>
+                <PerformanceChart data={assetDistData} variant="bars" />
+              </AnalyticsCard>
+            )}
+
+            {histogramData.length > 0 && (
+              <AnalyticsCard title={t('analytics.pnlHistogram')}>
+                <PerformanceChart data={histogramData} variant="bars" />
+                <View style={styles.legendRow}>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: colors.negative }]} />
+                    <Text style={styles.legendText}>{t('analytics.losses')}</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: colors.positive }]} />
+                    <Text style={styles.legendText}>{t('analytics.gains')}</Text>
+                  </View>
+                </View>
+              </AnalyticsCard>
+            )}
           </>
         )}
 
@@ -214,12 +272,14 @@ function AssetRow({
   colors,
   money,
   percent,
+  duration,
   t,
 }: {
   asset: AssetPerf;
   colors: ColorPalette;
   money: (value: number) => string;
   percent: (value: number) => string;
+  duration: (ms: number | null) => string;
   t: (key: TranslationKey) => string;
 }) {
   const styles = createStyles(colors);
@@ -231,9 +291,83 @@ function AssetRow({
         <Text style={styles.assetMeta}>
           {asset.closedTrades} {t('analytics.asset.trades')} · {percent(asset.winRate)}{' '}
           {t('analytics.asset.winRate')}
+          {asset.averageDurationMs !== null ? ` · ${duration(asset.averageDurationMs)}` : ''}
         </Text>
       </View>
       <Text style={[styles.assetPnl, { color: pnlColor }]}>{money(asset.netPnl)}</Text>
+    </View>
+  );
+}
+
+function RankingsCard({
+  time,
+  colors,
+  money,
+  t,
+}: {
+  time: TimeStats;
+  colors: ColorPalette;
+  money: (value: number) => string;
+  t: (key: TranslationKey) => string;
+}) {
+  const styles = createStyles(colors);
+  const items: { label: string; name: string; pnl: number; tone: InsightTone }[] = [];
+  if (time.bestDay)
+    items.push({ label: t('analytics.temporal.bestDay'), name: bucketLabel('weekday', time.bestDay.key, t), pnl: time.bestDay.netPnl, tone: 'positive' });
+  if (time.worstDay)
+    items.push({ label: t('analytics.temporal.worstDay'), name: bucketLabel('weekday', time.worstDay.key, t), pnl: time.worstDay.netPnl, tone: 'negative' });
+  if (time.bestHour)
+    items.push({ label: t('analytics.temporal.bestHour'), name: bucketLabel('hour', time.bestHour.key, t), pnl: time.bestHour.netPnl, tone: 'positive' });
+  if (time.worstHour)
+    items.push({ label: t('analytics.temporal.worstHour'), name: bucketLabel('hour', time.worstHour.key, t), pnl: time.worstHour.netPnl, tone: 'negative' });
+
+  if (items.length === 0) return null;
+
+  return (
+    <AnalyticsCard title={t('analytics.rankings')}>
+      <View style={styles.grid}>
+        {items.map((item) => (
+          <MetricCard key={item.label} label={item.label} value={item.name} hint={money(item.pnl)} tone={item.tone} />
+        ))}
+      </View>
+    </AnalyticsCard>
+  );
+}
+
+function DirectionColumn({
+  stats,
+  colors,
+  money,
+  percent,
+  ratio,
+  t,
+}: {
+  stats: DirectionStats;
+  colors: ColorPalette;
+  money: (value: number) => string;
+  percent: (value: number) => string;
+  ratio: (value: number) => string;
+  t: (key: TranslationKey) => string;
+}) {
+  const styles = createStyles(colors);
+  const pnlColor = stats.netPnl >= 0 ? colors.positive : colors.negative;
+  const rows: { label: string; value: string; color?: string }[] = [
+    { label: t('analytics.metric.closedTrades'), value: String(stats.closedTrades) },
+    { label: t('analytics.metric.netPnl'), value: money(stats.netPnl), color: pnlColor },
+    { label: t('analytics.metric.winRate'), value: percent(stats.winRate) },
+    { label: t('analytics.metric.profitFactor'), value: ratio(stats.profitFactor) },
+  ];
+  return (
+    <View style={styles.directionCol}>
+      <Text style={[styles.directionTitle, { color: stats.direction === 'LONG' ? colors.positive : colors.negative }]}>
+        {stats.direction === 'LONG' ? t('trade.long') : t('trade.short')}
+      </Text>
+      {rows.map((row) => (
+        <View key={row.label} style={styles.dirRow}>
+          <Text style={styles.dirLabel}>{row.label}</Text>
+          <Text style={[styles.dirValue, !!row.color && { color: row.color }]}>{row.value}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -324,6 +458,62 @@ const createStyles = (colors: ColorPalette) =>
     assetPnl: {
       fontSize: 14,
       fontWeight: '800',
+    },
+    directionRow: {
+      flexDirection: 'row',
+    },
+    directionCol: {
+      flex: 1,
+      paddingHorizontal: 6,
+    },
+    directionDivider: {
+      width: StyleSheet.hairlineWidth,
+      backgroundColor: colors.border,
+    },
+    directionTitle: {
+      fontSize: 13,
+      fontWeight: '800',
+      letterSpacing: 0.5,
+      marginBottom: 8,
+    },
+    dirRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 5,
+    },
+    dirLabel: {
+      color: colors.textSecondary,
+      fontSize: 11,
+      fontWeight: '600',
+      flexShrink: 1,
+      marginRight: 8,
+    },
+    dirValue: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    legendRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 18,
+      marginTop: 8,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    legendDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+    legendText: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '600',
     },
     empty: {
       flex: 1,

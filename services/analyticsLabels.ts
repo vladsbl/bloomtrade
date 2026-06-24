@@ -30,7 +30,7 @@ export const MONTH_KEYS: TranslationKey[] = [
 
 /** Resolve the localized short label for a BucketPerf key of a given kind. */
 export function bucketLabel(
-  kind: 'weekday' | 'month' | 'hour',
+  kind: 'weekday' | 'week' | 'month' | 'hour',
   key: string,
   t: (key: TranslationKey) => string
 ): string {
@@ -40,6 +40,11 @@ export function bucketLabel(
   }
   if (kind === 'hour') {
     return `${key}h`;
+  }
+  if (kind === 'week') {
+    // week key is the Monday "YYYY-MM-DD"
+    const [, month, day] = key.split('-');
+    return `${day}/${month}`;
   }
   // month key is "YYYY-MM"
   const [year, month] = key.split('-');

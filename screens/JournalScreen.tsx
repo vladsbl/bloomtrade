@@ -4,10 +4,12 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ScoreCard from '../components/analytics/ScoreCard';
 import JournalCalendar from '../components/JournalCalendar';
 import TradeCard from '../components/TradeCard';
 import { JournalStackParamList } from '../navigation/JournalStack';
 import { formatDateKey } from '../services/calendarUtils';
+import { buildAnalytics } from '../services/tradingAnalyticsService';
 import { useLanguage } from '../store/i18n';
 import { useJournalByDate } from '../store/journalByDate';
 import { useTheme } from '../store/theme';
@@ -32,6 +34,8 @@ export default function JournalScreen() {
   const selectedDay = days[selectedDateKey];
   const trades = selectedDay?.trades ?? [];
   const note = selectedDay?.note ?? '';
+
+  const report = useMemo(() => buildAnalytics(days), [days]);
 
   const markedDates = useMemo(() => {
     const marked = new Set<string>();
@@ -85,6 +89,12 @@ export default function JournalScreen() {
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <View>
+            {report.hasData && (
+              <Pressable onPress={() => navigation.navigate('Analytics')} style={styles.scoreWrap}>
+                <ScoreCard score={report.score} />
+              </Pressable>
+            )}
+
             <JournalCalendar
               selectedDateKey={selectedDateKey}
               onSelectDate={handleSelectDate}
@@ -172,6 +182,10 @@ const createStyles = (colors: ColorPalette) =>
     },
     list: {
       paddingBottom: 24,
+    },
+    scoreWrap: {
+      paddingHorizontal: 16,
+      marginBottom: 4,
     },
     dayHeader: {
       flexDirection: 'row',

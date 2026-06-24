@@ -4,9 +4,11 @@ import {
   AnalyticsReport,
   AssetPerf,
   BucketPerf,
+  DirectionStats,
   DurationStats,
   EquityPoint,
   GeneralStats,
+  HistogramBin,
   RiskStats,
   TimeStats,
   TradingScore,
@@ -21,6 +23,7 @@ const RANKING_SIZE = 5;
  */
 interface AnalyzedTrade {
   symbol: string;
+  direction: 'LONG' | 'SHORT';
   date: string; // YYYY-MM-DD (the journal day)
   status: Trade['status'];
   quantity: number;
@@ -30,6 +33,7 @@ interface AnalyzedTrade {
   pnl: number; // realized PnL (0 for open trades)
   openedAt: number | null;
   closedAt: number | null;
+  durationMs: number | null; // closedAt - openedAt when both known
   orderKey: number; // chronological sort key
 }
 
@@ -61,8 +65,11 @@ export function buildAnalytics(days: Record<string, JournalDay>): AnalyticsRepor
     assets,
     topAssets,
     worstAssets,
+    long: computeDirection(trades, 'LONG'),
+    short: computeDirection(trades, 'SHORT'),
     score,
     equityCurve,
+    pnlHistogram: computeHistogram(closed),
   };
 }
 
@@ -81,9 +88,12 @@ function flattenTrades(days: Record<string, JournalDay>): AnalyzedTrade[] {
       const pnl = isClosed ? (Number(trade.exitPrice) - entryPrice) * quantity * direction : 0;
       const openedAt = Number.isFinite(trade.openedAt) ? (trade.openedAt as number) : null;
       const closedAt = Number.isFinite(trade.closedAt) ? (trade.closedAt as number) : null;
+      const durationMs =
+        openedAt !== null && closedAt !== null && closedAt > openedAt ? closedAt - openedAt : null;
 
       result.push({
         symbol: trade.symbol,
+        direction: trade.direction === 'SHORT' ? 'SHORT' : 'LONG',
         date: day.date,
         status: trade.status,
         quantity,
@@ -93,6 +103,7 @@ function flattenTrades(days: Record<string, JournalDay>): AnalyzedTrade[] {
         pnl,
         openedAt,
         closedAt,
+        durationMs,
         orderKey: openedAt ?? dayToTimestamp(day.date),
       });
     }
@@ -133,6 +144,8 @@ function computeGeneral(trades: AnalyzedTrade[], closed: AnalyzedTrade[]): Gener
     netPnl,
     profitFactor: grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0,
     expectancy: closed.length > 0 ? netPnl / closed.length : 0,
+    bestTrade: closed.length > 0 ? Math.max(...closed.map((trade) => trade.pnl)) : 0,
+    worstTrade: closed.length > 0 ? Math.min(...closed.map((trade) => trade.pnl)) : 0,
   };
 }
 
@@ -180,6 +193,8 @@ function computeRisk(
           : 0,
     recoveryFactor:
       maxDrawdown > 0 ? general.netPnl / maxDrawdown : general.netPnl > 0 ? Infinity : 0,
+    resultsVolatility: stdev(closed.map((trade) => trade.pnl)),
+    averageRisk: average(closed.map((trade) => trade.cost)),
   };
 }
 
@@ -212,6 +227,7 @@ function computeStreaks(closed: AnalyzedTrade[]): {
 
 function computeTime(closed: AnalyzedTrade[]): TimeStats {
   const weekday = new Map<string, BucketAccumulator>();
+  const week = new Map<string, BucketAccumulator>();
   const month = new Map<string, BucketAccumulator>();
   const hour = new Map<string, BucketAccumulator>();
 
@@ -219,6 +235,7 @@ function computeTime(closed: AnalyzedTrade[]): TimeStats {
     const date = new Date(`${trade.date}T00:00:00`);
     if (!Number.isNaN(date.getTime())) {
       accumulate(weekday, String(date.getDay()), trade);
+      accumulate(week, weekKey(date), trade);
       accumulate(month, monthKey(trade.date), trade);
     }
     if (trade.openedAt !== null) {
@@ -226,12 +243,39 @@ function computeTime(closed: AnalyzedTrade[]): TimeStats {
     }
   }
 
+  const byWeekday = toBuckets(weekday).sort((a, b) => Number(a.key) - Number(b.key));
+  const byHour = toBuckets(hour).sort((a, b) => Number(a.key) - Number(b.key));
+
   return {
-    byWeekday: toBuckets(weekday).sort((a, b) => Number(a.key) - Number(b.key)),
+    byWeekday,
+    byWeek: toBuckets(week).sort((a, b) => a.key.localeCompare(b.key)),
     byMonth: toBuckets(month).sort((a, b) => a.key.localeCompare(b.key)),
-    byHour: toBuckets(hour).sort((a, b) => Number(a.key) - Number(b.key)),
+    byHour,
     duration: computeDuration(closed),
+    bestDay: extremeBucket(byWeekday, 'max'),
+    worstDay: extremeBucket(byWeekday, 'min'),
+    bestHour: extremeBucket(byHour, 'max'),
+    worstHour: extremeBucket(byHour, 'min'),
   };
+}
+
+/** The bucket with the highest/lowest netPnl, or null when there are none. */
+function extremeBucket(buckets: BucketPerf[], mode: 'max' | 'min'): BucketPerf | null {
+  if (buckets.length === 0) return null;
+  return buckets.reduce((best, bucket) =>
+    (mode === 'max' ? bucket.netPnl > best.netPnl : bucket.netPnl < best.netPnl) ? bucket : best
+  );
+}
+
+// ISO-ish week key = the Monday of the trade's week, as "YYYY-MM-DD".
+function weekKey(date: Date): string {
+  const monday = new Date(date);
+  const day = (monday.getDay() + 6) % 7; // 0 = Monday
+  monday.setDate(monday.getDate() - day);
+  const y = monday.getFullYear();
+  const m = String(monday.getMonth() + 1).padStart(2, '0');
+  const d = String(monday.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 interface BucketAccumulator {
@@ -289,16 +333,26 @@ function computeDuration(closed: AnalyzedTrade[]): DurationStats {
 
 // --- Asset analysis --------------------------------------------------------
 
+interface AssetAccumulator {
+  trades: number;
+  closed: number;
+  wins: number;
+  netPnl: number;
+  durations: number[]; // holding times of timed closed trades
+}
+
 function computeAssets(trades: AnalyzedTrade[]): AssetPerf[] {
-  const bySymbol = new Map<string, { trades: number; closed: number; wins: number; netPnl: number }>();
+  const bySymbol = new Map<string, AssetAccumulator>();
 
   for (const trade of trades) {
-    const entry = bySymbol.get(trade.symbol) ?? { trades: 0, closed: 0, wins: 0, netPnl: 0 };
+    const entry =
+      bySymbol.get(trade.symbol) ?? { trades: 0, closed: 0, wins: 0, netPnl: 0, durations: [] };
     entry.trades += 1;
     if (trade.isClosed) {
       entry.closed += 1;
       entry.netPnl += trade.pnl;
       if (trade.pnl > 0) entry.wins += 1;
+      if (trade.durationMs !== null) entry.durations.push(trade.durationMs);
     }
     bySymbol.set(trade.symbol, entry);
   }
@@ -311,8 +365,56 @@ function computeAssets(trades: AnalyzedTrade[]): AssetPerf[] {
       netPnl: entry.netPnl,
       winRate: entry.closed > 0 ? (entry.wins / entry.closed) * 100 : 0,
       averagePnl: entry.closed > 0 ? entry.netPnl / entry.closed : 0,
+      averageDurationMs: entry.durations.length > 0 ? average(entry.durations) : null,
     }))
     .sort((a, b) => b.netPnl - a.netPnl);
+}
+
+// --- Long / Short breakdown ------------------------------------------------
+
+function computeDirection(trades: AnalyzedTrade[], direction: 'LONG' | 'SHORT'): DirectionStats {
+  const subset = trades.filter((trade) => trade.direction === direction);
+  const closed = subset.filter((trade) => trade.isClosed);
+  const winners = closed.filter((trade) => trade.pnl > 0);
+  const grossProfit = sum(winners.map((trade) => trade.pnl));
+  const grossLoss = Math.abs(sum(closed.filter((trade) => trade.pnl < 0).map((trade) => trade.pnl)));
+
+  return {
+    direction,
+    trades: subset.length,
+    closedTrades: closed.length,
+    netPnl: grossProfit - grossLoss,
+    winRate: closed.length > 0 ? (winners.length / closed.length) * 100 : 0,
+    profitFactor: grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0,
+  };
+}
+
+// --- Win/loss histogram ----------------------------------------------------
+
+const HISTOGRAM_BINS = 7;
+
+function computeHistogram(closed: AnalyzedTrade[]): HistogramBin[] {
+  if (closed.length === 0) return [];
+  const pnls = closed.map((trade) => trade.pnl);
+  const min = Math.min(...pnls);
+  const max = Math.max(...pnls);
+
+  if (min === max) {
+    return [{ lowerEdge: min, upperEdge: max, count: pnls.length, isWin: min >= 0 }];
+  }
+
+  const step = (max - min) / HISTOGRAM_BINS;
+  const bins: HistogramBin[] = Array.from({ length: HISTOGRAM_BINS }, (_, i) => {
+    const lowerEdge = min + i * step;
+    const upperEdge = i === HISTOGRAM_BINS - 1 ? max : lowerEdge + step;
+    return { lowerEdge, upperEdge, count: 0, isWin: (lowerEdge + upperEdge) / 2 >= 0 };
+  });
+
+  for (const pnl of pnls) {
+    const idx = Math.min(HISTOGRAM_BINS - 1, Math.max(0, Math.floor((pnl - min) / step)));
+    bins[idx].count += 1;
+  }
+  return bins;
 }
 
 function rankAssets(assets: AssetPerf[]): { topAssets: AssetPerf[]; worstAssets: AssetPerf[] } {

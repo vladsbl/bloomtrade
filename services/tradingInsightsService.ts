@@ -37,7 +37,7 @@ export function generateInsights(
   if (!report.hasData) return [];
 
   const insights: TradingInsight[] = [];
-  const { general, risk, time, assets } = report;
+  const { general, risk, time, assets, long, short } = report;
 
   const push = (id: string, tone: TradingInsight['tone'], text: string) =>
     insights.push({ id, tone, text });
@@ -177,6 +177,32 @@ export function generateInsights(
     push('discipline', 'positive', t('analytics.insight.disciplineHigh'));
   } else if (report.score.disciplineScore <= 4) {
     push('discipline', 'neutral', t('analytics.insight.disciplineLow'));
+  }
+
+  // 11. Concentration: how much one asset drives the gains.
+  if (general.grossProfit > 0) {
+    const topGainer = assets
+      .filter((asset) => asset.netPnl > 0)
+      .sort((a, b) => b.netPnl - a.netPnl)[0];
+    if (topGainer) {
+      const share = Math.round((topGainer.netPnl / general.grossProfit) * 100);
+      if (share >= 30) {
+        push(
+          'asset-share',
+          'neutral',
+          fill(t('analytics.insight.assetShare'), { symbol: topGainer.symbol, pct: share })
+        );
+      }
+    }
+  }
+
+  // 12. Long vs short edge.
+  if (long.closedTrades >= MIN_BUCKET_TRADES && short.closedTrades >= MIN_BUCKET_TRADES) {
+    if (long.netPnl > 0 && long.netPnl > short.netPnl) {
+      push('direction-edge', 'neutral', t('analytics.insight.directionLong'));
+    } else if (short.netPnl > 0 && short.netPnl > long.netPnl) {
+      push('direction-edge', 'neutral', t('analytics.insight.directionShort'));
+    }
   }
 
   return insights;

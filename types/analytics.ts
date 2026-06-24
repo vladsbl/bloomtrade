@@ -18,6 +18,8 @@ export interface GeneralStats {
   netPnl: number; // grossProfit - grossLoss
   profitFactor: number; // grossProfit / grossLoss (Infinity if no losses)
   expectancy: number; // mean PnL per closed trade
+  bestTrade: number; // largest single winning PnL (0 when none)
+  worstTrade: number; // largest single losing PnL, negative (0 when none)
 }
 
 export interface RiskStats {
@@ -27,6 +29,18 @@ export interface RiskStats {
   worstLossStreak: number; // longest run of consecutive losers
   payoffRatio: number; // averageWin / averageLoss (Infinity if no losses)
   recoveryFactor: number; // netPnl / maxDrawdown (Infinity if no drawdown)
+  resultsVolatility: number; // standard deviation of closed-trade PnL
+  averageRisk: number; // mean capital deployed per closed trade (entry × |qty|)
+}
+
+// Aggregate stats for one trade direction (LONG or SHORT).
+export interface DirectionStats {
+  direction: 'LONG' | 'SHORT';
+  trades: number;
+  closedTrades: number;
+  netPnl: number;
+  winRate: number;
+  profitFactor: number;
 }
 
 // A performance slice (weekday, month, hour, …). `key` is stable and
@@ -48,9 +62,14 @@ export interface DurationStats {
 
 export interface TimeStats {
   byWeekday: BucketPerf[]; // keys "0".."6" (JS getDay, 0 = Sunday)
+  byWeek: BucketPerf[]; // keys "YYYY-MM-DD" (week's Monday), chronological
   byMonth: BucketPerf[]; // keys "YYYY-MM", chronological
   byHour: BucketPerf[]; // keys "0".."23", only hours with trades
   duration: DurationStats;
+  bestDay: BucketPerf | null; // most profitable weekday
+  worstDay: BucketPerf | null; // least profitable weekday
+  bestHour: BucketPerf | null; // most profitable entry hour
+  worstHour: BucketPerf | null; // least profitable entry hour
 }
 
 export interface AssetPerf {
@@ -60,6 +79,15 @@ export interface AssetPerf {
   netPnl: number;
   winRate: number;
   averagePnl: number; // netPnl / closedTrades
+  averageDurationMs: number | null; // mean holding time (timed closed trades)
+}
+
+// One bar of the win/loss distribution histogram.
+export interface HistogramBin {
+  lowerEdge: number;
+  upperEdge: number;
+  count: number;
+  isWin: boolean; // bin centered on a positive PnL
 }
 
 export interface TradingScore {
@@ -85,8 +113,11 @@ export interface AnalyticsReport {
   assets: AssetPerf[]; // all symbols, sorted by netPnl desc
   topAssets: AssetPerf[]; // best ranked (closed trades only)
   worstAssets: AssetPerf[]; // worst ranked (closed trades only)
+  long: DirectionStats; // LONG-only aggregate
+  short: DirectionStats; // SHORT-only aggregate
   score: TradingScore;
   equityCurve: EquityPoint[];
+  pnlHistogram: HistogramBin[]; // win/loss distribution
 }
 
 export type InsightTone = 'positive' | 'negative' | 'neutral';
