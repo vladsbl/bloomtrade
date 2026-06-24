@@ -87,6 +87,7 @@ async function tryAlphaVantage(apiSymbol: string, range: HistoryRange): Promise<
     .map(([time, ohlc]) => ({
       time: new Date(time).toISOString(),
       price: parseFloat(ohlc['4. close']),
+      volume: parseFloat(ohlc['5. volume']),
     }))
     .filter((point) => Number.isFinite(point.price) && point.price > 0)
     .sort((a, b) => a.time.localeCompare(b.time));
@@ -116,8 +117,8 @@ async function tryStooq(
   const points = lines
     .slice(1)
     .map((line) => {
-      const [date, , , , close] = line.split(',');
-      return { time: new Date(date).toISOString(), price: parseFloat(close) };
+      const [date, , , , close, volume] = line.split(',');
+      return { time: new Date(date).toISOString(), price: parseFloat(close), volume: parseFloat(volume) };
     })
     .filter((point) => Number.isFinite(point.price) && point.price > 0);
 

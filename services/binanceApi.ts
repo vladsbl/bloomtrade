@@ -70,6 +70,7 @@ export async function getBinanceKlines(
       .map((kline) => ({
         time: new Date(kline[0]).toISOString(),
         price: parseFloat(kline[4]),
+        volume: parseFloat(kline[5] as string),
       }))
       .filter((point) => Number.isFinite(point.price) && point.price > 0);
 

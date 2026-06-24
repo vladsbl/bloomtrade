@@ -18,9 +18,13 @@ import DailyBriefCard from '../components/DailyBriefCard';
 import MarketOverviewCard from '../components/MarketOverviewCard';
 import NewsCard from '../components/NewsCard';
 import TopMoversCard from '../components/TopMoversCard';
-import WatchlistCard from '../components/WatchlistCard';
+import AssetSignalsCard from '../components/watchlist/AssetSignalsCard';
+import OpportunityScore from '../components/watchlist/OpportunityScore';
+import SignalBadge from '../components/watchlist/SignalBadge';
+import { useWatchlistScanner } from '../hooks/useWatchlistScanner';
 import { MarketStackParamList } from '../navigation/MarketStack';
 import { getMarketNews } from '../services/financeApi';
+import { generateAssetInsights } from '../services/marketInsightGenerator';
 import { getMarketOverview } from '../services/marketOverviewService';
 import { getTopMovers } from '../services/topMoversService';
 import {
@@ -56,6 +60,14 @@ export default function MarketScreen() {
   const listRef = useRef<FlatList<NewsItem>>(null);
   useScrollToTop(listRef);
 
+  // Smart-watchlist scan (cached) + the best opportunities.
+  const { results: signalsBySymbol, opportunities, refresh: refreshScan } =
+    useWatchlistScanner(watchlistSymbols);
+  const changeBySymbol = useMemo(
+    () => new Map(watchlistItems.map((item) => [item.symbol, item.changePercent])),
+    [watchlistItems]
+  );
+
   const todayLabel = useMemo(() => {
     const locale = language === 'fr' ? 'fr-FR' : 'en-US';
     const label = new Date().toLocaleDateString(locale, {
@@ -90,9 +102,9 @@ export default function MarketScreen() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadDashboard();
+    await Promise.all([loadDashboard(), refreshScan()]);
     setRefreshing(false);
-  }, [loadDashboard]);
+  }, [loadDashboard, refreshScan]);
 
   const handleSelectAsset = useCallback(
     async (asset: Asset) => {
@@ -118,6 +130,51 @@ export default function MarketScreen() {
     },
     [watchlistSymbols]
   );
+
+  // Highlighted "Market Opportunities" section — top assets by score.
+  const renderOpportunities = () => {
+    if (opportunities.length === 0) return null;
+    return (
+      <View style={styles.opportunities}>
+        <Text style={styles.opportunitiesTitle}>🚀 {t('scanner.opportunities')}</Text>
+        {opportunities.map((asset) => {
+          const change = changeBySymbol.get(asset.symbol) ?? null;
+          const insight = generateAssetInsights(asset, t)[0];
+          const isUp = (change ?? 0) >= 0;
+          return (
+            <Pressable
+              key={asset.symbol}
+              style={styles.oppRow}
+              onPress={() => navigation.navigate('AssetDetail', { symbol: asset.symbol })}
+            >
+              <OpportunityScore score={asset.score.score} />
+              <View style={styles.oppInfo}>
+                <View style={styles.oppTopLine}>
+                  <Text style={styles.oppSymbol}>{asset.symbol}</Text>
+                  {change !== null && (
+                    <Text style={[styles.oppChange, { color: isUp ? colors.positive : colors.negative }]}>
+                      {isUp ? '+' : ''}
+                      {change.toFixed(2)}%
+                    </Text>
+                  )}
+                </View>
+                {!!insight && (
+                  <Text style={styles.oppInsight} numberOfLines={2}>
+                    {insight}
+                  </Text>
+                )}
+                <View style={styles.oppBadges}>
+                  {asset.signals.map((signal) => (
+                    <SignalBadge key={signal.kind} kind={signal.kind} />
+                  ))}
+                </View>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  };
 
   if (loading) {
     return (
@@ -171,6 +228,8 @@ export default function MarketScreen() {
               </ScrollView>
             </View>
 
+            {renderOpportunities()}
+
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionTitle}>{t('market.watchlist')}</Text>
@@ -192,9 +251,10 @@ export default function MarketScreen() {
                 <Text style={styles.emptyText}>{t('market.watchlistEmpty')}</Text>
               ) : (
                 watchlistItems.map((item) => (
-                  <WatchlistCard
+                  <AssetSignalsCard
                     key={item.symbol}
                     item={item}
+                    signals={signalsBySymbol[item.symbol]}
                     onRemove={handleRemoveAsset}
                     onPress={(symbol) => navigation.navigate('AssetDetail', { symbol })}
                   />
@@ -259,6 +319,58 @@ const createStyles = (colors: ColorPalette) =>
       fontSize: 16,
       fontWeight: '800',
       marginBottom: 12,
+    },
+    opportunities: {
+      marginHorizontal: 16,
+      marginBottom: 24,
+      padding: 14,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      backgroundColor: colors.surface,
+    },
+    opportunitiesTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '800',
+      marginBottom: 12,
+    },
+    oppRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+    },
+    oppInfo: {
+      flex: 1,
+    },
+    oppTopLine: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    oppSymbol: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '800',
+    },
+    oppChange: {
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    oppInsight: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      lineHeight: 16,
+      marginTop: 3,
+    },
+    oppBadges: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginTop: 8,
     },
     sectionHeaderRow: {
       flexDirection: 'row',

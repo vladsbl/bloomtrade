@@ -9,6 +9,7 @@ export type HistorySource = 'binance' | 'alphavantage' | 'stooq' | 'mock';
 export interface HistoricalPoint {
   time: string; // ISO timestamp
   price: number;
+  volume?: number; // when the feed provides it (Binance / Stooq / Alpha Vantage)
 }
 
 export interface HistoricalSeries {
