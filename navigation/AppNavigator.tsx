@@ -5,9 +5,9 @@ import React from 'react';
 import JournalStack from './JournalStack';
 import MarketStack from './MarketStack';
 import SettingsStack from './SettingsStack';
+import TradesStack from './TradesStack';
 import { RootTabParamList } from './types';
 import ChartsScreen from '../screens/ChartsScreen';
-import TradesScreen from '../screens/TradesScreen';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 
@@ -69,7 +69,7 @@ export default function AppNavigator() {
       >
         <Tab.Screen name="Home" component={MarketStack} />
         <Tab.Screen name="Charts" component={ChartsScreen} />
-        <Tab.Screen name="Trades" component={TradesScreen} />
+        <Tab.Screen name="Trades" component={TradesStack} />
         <Tab.Screen name="Journal" component={JournalStack} />
         <Tab.Screen name="Settings" component={SettingsStack} />
       </Tab.Navigator>

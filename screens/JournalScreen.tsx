@@ -73,10 +73,6 @@ export default function JournalScreen() {
             <Ionicons name="stats-chart-outline" size={16} color={colors.primary} />
             <Text style={styles.portfolioButtonText}>{t('analytics.title')}</Text>
           </Pressable>
-          <Pressable style={styles.portfolioButton} onPress={() => navigation.navigate('Portfolio')}>
-            <Ionicons name="pie-chart-outline" size={16} color={colors.primary} />
-            <Text style={styles.portfolioButtonText}>{t('portfolio.title')}</Text>
-          </Pressable>
         </View>
       </View>
 
