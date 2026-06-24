@@ -44,12 +44,15 @@ interface AnalyzedTrade {
  * no i18n, no network, no side effects. Safe on empty / partial data — every
  * metric is guarded against division by zero and missing fields.
  */
-export function buildAnalytics(days: Record<string, JournalDay>): AnalyticsReport {
+export function buildAnalytics(
+  days: Record<string, JournalDay>,
+  initialCapital: number = 0
+): AnalyticsReport {
   const trades = flattenTrades(days);
   const closed = trades.filter((trade) => trade.isClosed);
 
   const general = computeGeneral(trades, closed);
-  const equityCurve = computeEquityCurve(closed);
+  const equityCurve = computeEquityCurve(closed, initialCapital);
   const risk = computeRisk(closed, equityCurve, general);
   const time = computeTime(closed);
   const assets = computeAssets(trades);
@@ -151,9 +154,9 @@ function computeGeneral(trades: AnalyzedTrade[], closed: AnalyzedTrade[]): Gener
 
 // --- Equity curve & risk ---------------------------------------------------
 
-function computeEquityCurve(closed: AnalyzedTrade[]): EquityPoint[] {
-  const curve: EquityPoint[] = [{ index: 0, value: 0 }];
-  let equity = 0;
+function computeEquityCurve(closed: AnalyzedTrade[], initialCapital: number): EquityPoint[] {
+  const curve: EquityPoint[] = [{ index: 0, value: initialCapital }];
+  let equity = initialCapital;
   closed.forEach((trade, i) => {
     equity += trade.pnl;
     curve.push({ index: i + 1, value: equity });
@@ -443,7 +446,7 @@ function computeScore(input: {
   const { general, risk, trades, closed } = input;
 
   if (closed.length === 0) {
-    return { score: 0, performanceScore: 0, riskScore: 0, consistencyScore: 0, disciplineScore: 0 };
+    return { totalScore: 0, performanceScore: 0, riskScore: 0, consistencyScore: 0, disciplineScore: 0 };
   }
 
   const performanceScore = round(performancePoints(general));
@@ -456,7 +459,7 @@ function computeScore(input: {
     riskScore,
     consistencyScore,
     disciplineScore,
-    score: performanceScore + riskScore + consistencyScore + disciplineScore,
+    totalScore: performanceScore + riskScore + consistencyScore + disciplineScore,
   };
 }
 

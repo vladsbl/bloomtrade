@@ -27,7 +27,10 @@ export default function AnalyticsScreen() {
   const { summary } = useOpenPositions(); // live unrealized P&L
   const styles = createStyles(colors);
 
-  const report = useMemo(() => buildAnalytics(days), [days]);
+  const report = useMemo(
+    () => buildAnalytics(days, summary.initialCapital),
+    [days, summary.initialCapital]
+  );
 
   // Sign-aware money + helpers (formatBase keeps amounts in the display currency).
   const money = (value: number) => `${value < 0 ? '-' : ''}${formatBase(Math.abs(value))}`;

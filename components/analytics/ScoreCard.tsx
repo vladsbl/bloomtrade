@@ -24,9 +24,9 @@ export default function ScoreCard({ score }: { score: TradingScore }) {
 
   const radius = (SIZE - STROKE) / 2;
   const circumference = 2 * Math.PI * radius;
-  const progress = Math.max(0, Math.min(1, score.score / 100));
+  const progress = Math.max(0, Math.min(1, score.totalScore / 100));
   const ringColor =
-    score.score >= 70 ? colors.positive : score.score >= 40 ? colors.warning : colors.negative;
+    score.totalScore >= 70 ? colors.positive : score.totalScore >= 40 ? colors.warning : colors.negative;
 
   const breakdown: Breakdown[] = [
     { labelKey: 'analytics.score.performance', value: score.performanceScore, max: 40 },
@@ -54,7 +54,7 @@ export default function ScoreCard({ score }: { score: TradingScore }) {
           />
         </Svg>
         <View style={styles.ringCenter} pointerEvents="none">
-          <Text style={[styles.scoreValue, { color: ringColor }]}>{score.score}</Text>
+          <Text style={[styles.scoreValue, { color: ringColor }]}>{score.totalScore}</Text>
           <Text style={styles.scoreOutOf}>{t('analytics.score.outOf')}</Text>
         </View>
       </View>

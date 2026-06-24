@@ -91,14 +91,15 @@ export interface HistogramBin {
 }
 
 export interface TradingScore {
-  score: number; // 0..100
+  totalScore: number; // 0..100
   performanceScore: number; // 0..40
   riskScore: number; // 0..30
   consistencyScore: number; // 0..20
   disciplineScore: number; // 0..10
 }
 
-// One point of the cumulative realized-PnL equity curve.
+// One point of the account equity curve (initial capital + cumulative
+// realized PnL of closed trades, in chronological order).
 export interface EquityPoint {
   index: number;
   value: number;
