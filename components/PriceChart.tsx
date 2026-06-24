@@ -14,6 +14,13 @@ import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
 import { HistoricalPoint, HistoryRange } from '../types/history';
 
+// A horizontal price marker drawn across the chart (e.g. an open-position entry).
+export interface PriceMarker {
+  id: string;
+  price: number;
+  direction?: 'LONG' | 'SHORT';
+}
+
 interface PriceChartProps {
   points: HistoricalPoint[];
   loading?: boolean;
@@ -23,17 +30,31 @@ interface PriceChartProps {
   range?: HistoryRange;
   // Asset symbol — lets the scrubber tooltip show the price in the right currency.
   symbol?: string;
+  // Horizontal price lines (MT5-style entry markers). The vertical scale expands
+  // to keep every marker visible.
+  markers?: PriceMarker[];
 }
 
 const DEFAULT_HEIGHT = 220;
 const V_PADDING = 12;
 const TOOLTIP_WIDTH = 132;
 
-export default function PriceChart({ points, loading, height = DEFAULT_HEIGHT, color, range, symbol }: PriceChartProps) {
+export default function PriceChart({
+  points,
+  loading,
+  height = DEFAULT_HEIGHT,
+  color,
+  range,
+  symbol,
+  markers,
+}: PriceChartProps) {
   const { colors } = useTheme();
   const { t, language } = useLanguage();
   const { formatPrice } = useCurrency();
   const styles = createStyles(colors);
+
+  const markerColor = (direction?: 'LONG' | 'SHORT') =>
+    direction === 'LONG' ? colors.positive : direction === 'SHORT' ? colors.negative : colors.primary;
 
   const [width, setWidth] = useState(0);
   // Index of the point currently under the user's finger, or null when idle.
@@ -54,8 +75,12 @@ export default function PriceChart({ points, loading, height = DEFAULT_HEIGHT, c
     if (!renderable) return null;
 
     const prices = points.map((p) => p.price);
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
+    // Expand the domain to include marker prices so entry lines stay on-screen.
+    const markerPrices = (markers ?? [])
+      .map((m) => m.price)
+      .filter((price) => Number.isFinite(price));
+    const min = Math.min(...prices, ...markerPrices);
+    const max = Math.max(...prices, ...markerPrices);
     const span = max - min || 1;
 
     const x = (i: number) => (i / (points.length - 1)) * width;
@@ -67,7 +92,7 @@ export default function PriceChart({ points, loading, height = DEFAULT_HEIGHT, c
     const areaPath = `${linePath} L ${width.toFixed(2)} ${height} L 0 ${height} Z`;
 
     return { x, y, linePath, areaPath };
-  }, [renderable, points, width, height]);
+  }, [renderable, points, width, height, markers]);
 
   // Map a touch x-position to the nearest data point and select it.
   const updateActive = (event: GestureResponderEvent) => {
@@ -101,6 +126,8 @@ export default function PriceChart({ points, loading, height = DEFAULT_HEIGHT, c
     const activeY = active ? geometry.y(active.price) : 0;
     const tooltipLeft = Math.max(0, Math.min(width - TOOLTIP_WIDTH, activeX - TOOLTIP_WIDTH / 2));
 
+    const visibleMarkers = (markers ?? []).filter((m) => Number.isFinite(m.price));
+
     return (
       <View>
         <Svg width={width} height={height}>
@@ -112,6 +139,18 @@ export default function PriceChart({ points, loading, height = DEFAULT_HEIGHT, c
           </Defs>
           <Path d={geometry.areaPath} fill="url(#priceFill)" />
           <Path d={geometry.linePath} stroke={lineColor} strokeWidth={2} fill="none" />
+          {visibleMarkers.map((m) => (
+            <Line
+              key={m.id}
+              x1={0}
+              y1={geometry.y(m.price)}
+              x2={width}
+              y2={geometry.y(m.price)}
+              stroke={markerColor(m.direction)}
+              strokeWidth={1}
+              strokeDasharray="2 3"
+            />
+          ))}
           {active && (
             <>
               <Line
@@ -127,6 +166,20 @@ export default function PriceChart({ points, loading, height = DEFAULT_HEIGHT, c
             </>
           )}
         </Svg>
+        {visibleMarkers.map((m) => (
+          <View
+            key={m.id}
+            pointerEvents="none"
+            style={[
+              styles.markerLabel,
+              { top: geometry.y(m.price) - 9, backgroundColor: markerColor(m.direction) },
+            ]}
+          >
+            <Text style={styles.markerLabelText}>
+              {symbol ? formatPrice(m.price, symbol) : `$${formatTooltipPrice(m.price)}`}
+            </Text>
+          </View>
+        ))}
         {active && (
           <View pointerEvents="none" style={[styles.tooltip, { left: tooltipLeft }]}>
             <Text style={styles.tooltipPrice}>
@@ -217,5 +270,17 @@ const createStyles = (colors: ColorPalette) =>
       fontSize: 11,
       fontWeight: '600',
       marginTop: 2,
+    },
+    markerLabel: {
+      position: 'absolute',
+      right: 0,
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+      borderRadius: 3,
+    },
+    markerLabelText: {
+      color: '#fff',
+      fontSize: 10,
+      fontWeight: '800',
     },
   });

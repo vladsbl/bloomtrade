@@ -2,6 +2,9 @@ export const en = {
   'common.done': 'Done',
 
   'tabs.market': 'Market',
+  'tabs.home': 'Home',
+  'tabs.charts': 'Charts',
+  'tabs.trades': 'Trades',
   'tabs.journal': 'Journal',
   'tabs.alerts': 'Alerts',
   'tabs.settings': 'Settings',
@@ -228,6 +231,10 @@ export const en = {
   'positions.openedOn': 'Opened',
   'positions.close': 'Close',
   'positions.unquoted': 'Not quoted',
+
+  'trades.title': 'Trades',
+  'charts.title': 'Charts',
+  'charts.openEntries': 'Open entries',
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -236,6 +243,9 @@ export const fr: Record<TranslationKey, string> = {
   'common.done': 'Terminé',
 
   'tabs.market': 'Marché',
+  'tabs.home': 'Accueil',
+  'tabs.charts': 'Graphiques',
+  'tabs.trades': 'Trades',
   'tabs.journal': 'Journal',
   'tabs.alerts': 'Alertes',
   'tabs.settings': 'Réglages',
@@ -464,4 +474,8 @@ export const fr: Record<TranslationKey, string> = {
   'positions.openedOn': 'Ouverte le',
   'positions.close': 'Fermer',
   'positions.unquoted': 'Non coté',
+
+  'trades.title': 'Trades',
+  'charts.title': 'Graphiques',
+  'charts.openEntries': 'Entrées ouvertes',
 };

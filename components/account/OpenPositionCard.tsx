@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useCurrency } from '../../store/currency';
@@ -11,10 +12,11 @@ interface OpenPositionCardProps {
   position: OpenPosition;
   onClose: () => void;
   closing: boolean;
+  onPressChart?: () => void; // open this symbol in the Charts tab
 }
 
 /** A single open position with live valuation and a Close action. */
-export default function OpenPositionCard({ position, onClose, closing }: OpenPositionCardProps) {
+export default function OpenPositionCard({ position, onClose, closing, onPressChart }: OpenPositionCardProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const { formatPrice } = useCurrency();
@@ -69,17 +71,24 @@ export default function OpenPositionCard({ position, onClose, closing }: OpenPos
         <Text style={styles.openedOn}>
           {t('positions.openedOn')} {formatOpenDate(trade.openedAt, position.date)}
         </Text>
-        <Pressable
-          style={[styles.closeButton, (!position.hasPrice || closing) && styles.closeButtonDisabled]}
-          onPress={onClose}
-          disabled={!position.hasPrice || closing}
-        >
-          {closing ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.closeButtonText}>{t('positions.close')}</Text>
+        <View style={styles.actions}>
+          {!!onPressChart && (
+            <Pressable style={styles.chartButton} onPress={onPressChart} hitSlop={6}>
+              <Ionicons name="pulse-outline" size={18} color={colors.primary} />
+            </Pressable>
           )}
-        </Pressable>
+          <Pressable
+            style={[styles.closeButton, (!position.hasPrice || closing) && styles.closeButtonDisabled]}
+            onPress={onClose}
+            disabled={!position.hasPrice || closing}
+          >
+            {closing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.closeButtonText}>{t('positions.close')}</Text>
+            )}
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -200,6 +209,20 @@ const createStyles = (colors: ColorPalette) =>
     openedOn: {
       color: colors.textSecondary,
       fontSize: 12,
+    },
+    actions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    chartButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     closeButton: {
       backgroundColor: colors.negative,

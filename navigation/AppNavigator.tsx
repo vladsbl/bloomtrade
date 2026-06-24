@@ -4,24 +4,22 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import JournalStack from './JournalStack';
 import MarketStack from './MarketStack';
-import AlertsScreen from '../screens/AlertsScreen';
-import SettingsScreen from '../screens/SettingsScreen';
+import SettingsStack from './SettingsStack';
+import { RootTabParamList } from './types';
+import ChartsScreen from '../screens/ChartsScreen';
+import TradesScreen from '../screens/TradesScreen';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 
-export type RootTabParamList = {
-  Market: undefined;
-  Journal: undefined;
-  Alerts: undefined;
-  Settings: undefined;
-};
-
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
+// MetaTrader-style bottom bar: Home → Charts → Trades → Journal → Settings.
+// Alerts moved into Settings (bell in the Settings header).
 const ICONS: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> = {
-  Market: 'trending-up',
+  Home: 'home-outline',
+  Charts: 'pulse-outline',
+  Trades: 'briefcase-outline',
   Journal: 'book-outline',
-  Alerts: 'notifications-outline',
   Settings: 'settings-outline',
 };
 
@@ -43,9 +41,10 @@ export default function AppNavigator() {
   };
 
   const LABELS: Record<keyof RootTabParamList, string> = {
-    Market: t('tabs.market'),
+    Home: t('tabs.home'),
+    Charts: t('tabs.charts'),
+    Trades: t('tabs.trades'),
     Journal: t('tabs.journal'),
-    Alerts: t('tabs.alerts'),
     Settings: t('tabs.settings'),
   };
 
@@ -60,16 +59,19 @@ export default function AppNavigator() {
             backgroundColor: colors.surface,
             borderTopColor: colors.border,
           },
+          // Six tabs — keep labels compact so they stay on one line.
+          tabBarLabelStyle: { fontSize: 10 },
           tabBarLabel: LABELS[route.name],
           tabBarIcon: ({ color, size }) => (
             <Ionicons name={ICONS[route.name]} size={size} color={color} />
           ),
         })}
       >
-        <Tab.Screen name="Market" component={MarketStack} />
+        <Tab.Screen name="Home" component={MarketStack} />
+        <Tab.Screen name="Charts" component={ChartsScreen} />
+        <Tab.Screen name="Trades" component={TradesScreen} />
         <Tab.Screen name="Journal" component={JournalStack} />
-        <Tab.Screen name="Alerts" component={AlertsScreen} />
-        <Tab.Screen name="Settings" component={SettingsScreen} />
+        <Tab.Screen name="Settings" component={SettingsStack} />
       </Tab.Navigator>
     </NavigationContainer>
   );

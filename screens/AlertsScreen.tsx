@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useEffect, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -11,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AssetSearchInput from '../components/AssetSearchInput';
+import { SettingsStackParamList } from '../navigation/SettingsStack';
 import { useAlerts } from '../store/alerts';
 import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
@@ -19,10 +22,13 @@ import { Asset } from '../types/asset';
 import { AlertCondition, PriceAlert } from '../types/alert';
 import { ColorPalette } from '../theme/palettes';
 
+type AlertsNavigationProp = NativeStackNavigationProp<SettingsStackParamList, 'Alerts'>;
+
 export default function AlertsScreen() {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const { toNative, symbolForAsset } = useCurrency();
+  const navigation = useNavigation<AlertsNavigationProp>();
   const styles = createStyles(colors);
 
   const { alerts, addAlert, removeAlert, toggleAlert } = useAlerts();
@@ -55,13 +61,14 @@ export default function AlertsScreen() {
     resetForm();
   };
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('alerts.title')}</Text>
+  // The add/cancel toggle lives in the native stack header (top-right).
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
         <Pressable
           style={styles.addButton}
           onPress={() => (isAdding ? resetForm() : setIsAdding(true))}
+          hitSlop={8}
         >
           <Ionicons
             name={isAdding ? 'close' : 'add-circle-outline'}
@@ -72,8 +79,13 @@ export default function AlertsScreen() {
             {isAdding ? t('journal.cancel') : t('alerts.addAlert')}
           </Text>
         </Pressable>
-      </View>
+      ),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigation, isAdding, colors, t]);
 
+  return (
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <FlatList
         data={alerts}
         keyExtractor={(item) => item.id}
@@ -193,22 +205,11 @@ const createStyles = (colors: ColorPalette) =>
       flex: 1,
       backgroundColor: colors.background,
     },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-    },
-    title: {
-      color: colors.text,
-      fontSize: 26,
-      fontWeight: '800',
-    },
     addButton: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 5,
+      paddingHorizontal: 4,
     },
     addButtonText: {
       color: colors.primary,

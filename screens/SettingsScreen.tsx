@@ -1,6 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SettingsStackParamList } from '../navigation/SettingsStack';
 import { LEVERAGE_OPTIONS } from '../services/portfolioAccountingService';
 import { useCurrency } from '../store/currency';
 import { Language, useLanguage } from '../store/i18n';
@@ -9,10 +13,13 @@ import { useTradingAccount } from '../store/tradingAccount';
 import { Currency, CURRENCY_SYMBOLS } from '../types/currency';
 import { ColorPalette } from '../theme/palettes';
 
+type SettingsNavigationProp = NativeStackNavigationProp<SettingsStackParamList, 'SettingsHome'>;
+
 export default function SettingsScreen() {
   const { colors, mode, setTheme } = useTheme();
   const { t, language, setLanguage } = useLanguage();
   const { currency, setCurrency } = useCurrency();
+  const navigation = useNavigation<SettingsNavigationProp>();
   const {
     initialCapital,
     leverage,
@@ -59,6 +66,14 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('settings.title')}</Text>
+        <Pressable
+          style={styles.bellButton}
+          onPress={() => navigation.navigate('Alerts')}
+          hitSlop={8}
+          accessibilityLabel={t('alerts.title')}
+        >
+          <Ionicons name="notifications-outline" size={22} color={colors.primary} />
+        </Pressable>
       </View>
 
       <ScrollView
@@ -193,6 +208,9 @@ const createStyles = (colors: ColorPalette) =>
       backgroundColor: colors.background,
     },
     header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
       paddingHorizontal: 16,
       paddingVertical: 12,
     },
@@ -200,6 +218,13 @@ const createStyles = (colors: ColorPalette) =>
       color: colors.text,
       fontSize: 26,
       fontWeight: '800',
+    },
+    bellButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     scroll: {
       flex: 1,
