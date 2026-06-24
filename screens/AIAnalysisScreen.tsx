@@ -7,6 +7,7 @@ import AnalysisLoader from '../components/aiAnalyst/AnalysisLoader';
 import AnalysisReport from '../components/aiAnalyst/AnalysisReport';
 import { TradesStackParamList } from '../navigation/TradesStack';
 import { runAnalysis } from '../services/aiMarketAnalyst/aiMarketAnalystService';
+import { getHistoryEntry } from '../services/aiMarketAnalyst/cache';
 import { MarketAnalysisOutput } from '../services/aiMarketAnalyst/types';
 import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
@@ -39,26 +40,44 @@ export default function AIAnalysisScreen() {
     let active = true;
     setPhase('loading');
 
-    const minDelay = new Promise((resolve) => setTimeout(resolve, MIN_ANALYSIS_MS));
-    const analysis = runAnalysis({
-      symbol,
-      timeframe,
-      days,
-      t,
-      language,
-      formatPrice: (value) => formatPrice(value, symbol),
-      force: run.force,
-    });
-
-    Promise.all([analysis, minDelay])
-      .then(([result]) => {
-        if (!active) return;
-        setReport(result);
-        setPhase('ready');
-      })
-      .catch(() => {
-        if (active) setPhase('error');
+    const runFresh = () => {
+      const minDelay = new Promise((resolve) => setTimeout(resolve, MIN_ANALYSIS_MS));
+      const analysis = runAnalysis({
+        symbol,
+        timeframe,
+        days,
+        t,
+        language,
+        formatPrice: (value) => formatPrice(value, symbol),
+        force: run.force,
       });
+      Promise.all([analysis, minDelay])
+        .then(([result]) => {
+          if (!active) return;
+          setReport(result);
+          setPhase('ready');
+        })
+        .catch(() => {
+          if (active) setPhase('error');
+        });
+    };
+
+    // Opening a past analysis from the history list: show it instantly.
+    if (params.fromHistory && run.id === 0) {
+      getHistoryEntry(symbol, timeframe)
+        .then((stored) => {
+          if (!active) return;
+          if (stored) {
+            setReport(stored);
+            setPhase('ready');
+          } else {
+            runFresh();
+          }
+        })
+        .catch(() => active && runFresh());
+    } else {
+      runFresh();
+    }
 
     return () => {
       active = false;

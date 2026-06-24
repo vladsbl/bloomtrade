@@ -5,7 +5,7 @@ import { getHistoricalPrices } from '../historicalPriceService';
 import { scanAsset } from '../marketScannerService';
 import { collectOpenTrades } from '../portfolioAccountingService';
 import { getSyntheticLegs } from '../syntheticAssets';
-import { getCachedAnalysis, setCachedAnalysis } from './cache';
+import { addAnalysisToHistory, getCachedAnalysis, setCachedAnalysis } from './cache';
 import { SYSTEM_PROMPT, buildUserPrompt } from './prompts';
 import {
   AnalysisTimeframe,
@@ -52,7 +52,10 @@ export async function runAnalysis(params: RunAnalysisParams): Promise<MarketAnal
 
   if (!force) {
     const cached = await getCachedAnalysis(symbol, timeframe);
-    if (cached) return cached;
+    if (cached) {
+      await addAnalysisToHistory(cached).catch(() => {});
+      return cached;
+    }
   }
 
   const input = await gatherInput(symbol, timeframe, days);
@@ -60,6 +63,7 @@ export async function runAnalysis(params: RunAnalysisParams): Promise<MarketAnal
   const output = llm ?? synthesizeLocalAnalysis(input, t, formatPrice);
 
   await setCachedAnalysis(output).catch(() => {});
+  await addAnalysisToHistory(output).catch(() => {});
   return output;
 }
 

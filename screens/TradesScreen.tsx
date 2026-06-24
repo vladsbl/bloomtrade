@@ -2,22 +2,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AccountOverviewCard from '../components/account/AccountOverviewCard';
 import OpenPositionCard from '../components/account/OpenPositionCard';
 import AIAnalystButton from '../components/aiAnalyst/AIAnalystButton';
-import AssetSelectorModal from '../components/aiAnalyst/AssetSelectorModal';
 import { useOpenPositions } from '../hooks/useOpenPositions';
 import { TradesStackParamList } from '../navigation/TradesStack';
 import { RootTabParamList } from '../navigation/types';
-import { AnalysisTimeframe } from '../services/aiMarketAnalyst/types';
 import { useLanguage } from '../store/i18n';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
 
-// Composite: navigate within the Trades stack (AIAnalysis) and to sibling tabs (Charts).
+// Composite: navigate within the Trades stack (AIAnalysisHome) and to sibling tabs (Charts).
 type TradesNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<TradesStackParamList, 'TradesHome'>,
   BottomTabNavigationProp<RootTabParamList>
@@ -32,17 +30,6 @@ export default function TradesScreen() {
 
   const { positions, summary, loading, refreshing, refresh, closingId, closePosition } =
     useOpenPositions();
-
-  const [aiModalVisible, setAiModalVisible] = useState(false);
-  const positionSymbols = useMemo(
-    () => Array.from(new Set(positions.map((p) => p.trade.symbol))),
-    [positions]
-  );
-
-  const handleRunAnalysis = (symbol: string, timeframe: AnalysisTimeframe) => {
-    setAiModalVisible(false);
-    navigation.navigate('AIAnalysis', { symbol, timeframe });
-  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -72,7 +59,7 @@ export default function TradesScreen() {
         ListHeaderComponent={
           <View>
             <AccountOverviewCard summary={summary} />
-            <AIAnalystButton onPress={() => setAiModalVisible(true)} />
+            <AIAnalystButton onPress={() => navigation.navigate('AIAnalysisHome')} />
             <Text style={styles.sectionHeading}>{t('positions.title')}</Text>
             {loading && <ActivityIndicator color={colors.primary} style={styles.loader} />}
           </View>
@@ -82,13 +69,6 @@ export default function TradesScreen() {
             <Text style={styles.empty}>{t('positions.empty')}</Text>
           )
         }
-      />
-
-      <AssetSelectorModal
-        visible={aiModalVisible}
-        onClose={() => setAiModalVisible(false)}
-        onConfirm={handleRunAnalysis}
-        favorites={positionSymbols}
       />
     </SafeAreaView>
   );

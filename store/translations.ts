@@ -276,6 +276,10 @@ export const en = {
 
   'ai.title': 'AI Analysis',
   'ai.button': 'AI Analysis',
+  'ai.home.title': 'AI Analyses',
+  'ai.home.empty': 'No analyses yet',
+  'ai.home.emptyHint': 'Tap + to run your first AI market analysis.',
+  'ai.home.newAnalysis': 'New analysis',
   'ai.disclaimer':
     'Educational market analysis generated from price data — not financial advice. No buy/sell recommendations.',
   'ai.modal.title': 'AI Market Analyst',
@@ -644,6 +648,10 @@ export const fr: Record<TranslationKey, string> = {
 
   'ai.title': 'Analyse IA',
   'ai.button': 'Analyse IA',
+  'ai.home.title': 'Analyses IA',
+  'ai.home.empty': 'Aucune analyse pour le moment',
+  'ai.home.emptyHint': 'Touchez + pour lancer votre première analyse de marché IA.',
+  'ai.home.newAnalysis': 'Nouvelle analyse',
   'ai.disclaimer':
     "Analyse de marché éducative générée à partir des données de prix — pas un conseil financier. Aucune recommandation d'achat/vente.",
   'ai.modal.title': 'Analyste de marché IA',

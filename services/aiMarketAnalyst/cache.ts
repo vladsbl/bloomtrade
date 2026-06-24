@@ -55,3 +55,50 @@ export async function setCachedAnalysis(output: MarketAnalysisOutput): Promise<v
 export async function clearAnalysisCache(): Promise<void> {
   persist({});
 }
+
+// --- Persistent history (browsable past analyses) --------------------------
+
+const HISTORY_KEY = '@market_journal/ai_history';
+const HISTORY_LIMIT = 30;
+
+let historyMemory: MarketAnalysisOutput[] | null = null;
+
+async function loadHistory(): Promise<MarketAnalysisOutput[]> {
+  if (historyMemory) return historyMemory;
+  try {
+    const raw = await AsyncStorage.getItem(HISTORY_KEY);
+    historyMemory = raw ? (JSON.parse(raw) as MarketAnalysisOutput[]) : [];
+  } catch {
+    historyMemory = [];
+  }
+  return historyMemory;
+}
+
+function persistHistory(list: MarketAnalysisOutput[]): void {
+  historyMemory = list;
+  AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(list)).catch(() => {});
+}
+
+/** Past analyses, most recent first — one entry per asset+timeframe. */
+export async function getAnalysisHistory(): Promise<MarketAnalysisOutput[]> {
+  return [...(await loadHistory())];
+}
+
+export async function addAnalysisToHistory(output: MarketAnalysisOutput): Promise<void> {
+  const list = await loadHistory();
+  const key = cacheKey(output.asset, output.timeframe);
+  const next = [
+    output,
+    ...list.filter((entry) => cacheKey(entry.asset, entry.timeframe) !== key),
+  ].slice(0, HISTORY_LIMIT);
+  persistHistory(next);
+}
+
+/** The stored analysis for an asset+timeframe, ignoring TTL (for history view). */
+export async function getHistoryEntry(
+  symbol: string,
+  timeframe: AnalysisTimeframe
+): Promise<MarketAnalysisOutput | null> {
+  const list = await loadHistory();
+  return list.find((entry) => entry.asset === symbol && entry.timeframe === timeframe) ?? null;
+}
