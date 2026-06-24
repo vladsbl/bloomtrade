@@ -11,6 +11,11 @@ const SYNTHETIC_DEFINITIONS: Record<string, SyntheticDefinition> = {
   XAUEUR: { base: 'XAUUSD', quote: 'EURUSD' },
 };
 
+/** The two underlying UI symbols of a synthetic asset, or null if not synthetic. */
+export function getSyntheticLegs(symbol: string): { base: string; quote: string } | null {
+  return SYNTHETIC_DEFINITIONS[symbol] ?? null;
+}
+
 /**
  * Compute a synthetic quote as base/quote. getQuote fetches the underlying
  * quotes (by UI symbol); if either leg is unavailable this throws, so the

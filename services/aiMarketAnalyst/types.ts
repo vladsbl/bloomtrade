@@ -29,7 +29,8 @@ export interface MarketAnalysisInput {
   currentPrice: number;
   changePercent: number | null;
   latestCandle: { open: number; high: number; low: number; close: number } | null;
-  series: SeriesPoint[]; // chronological
+  series: SeriesPoint[]; // primary structure: last 12 days, 30-minute candles
+  intradaySeries: SeriesPoint[]; // short-term detail: last 2 days, 5-minute candles
   volume: { current: number | null; average: number | null; ratio: number | null };
   volatility: { ratio: number | null; level: string | null };
   levels: { support: number[]; resistance: number[]; recentHigh: number | null; recentLow: number | null };

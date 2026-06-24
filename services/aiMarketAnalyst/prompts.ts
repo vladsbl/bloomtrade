@@ -32,19 +32,23 @@ const TIMEFRAME_BRIEF: Record<AnalysisTimeframe, string> = {
   position: 'Position horizon (weeks+). Focus on the broader trend and macro structure.',
 };
 
+// Cap how many closes we serialize per series so the prompt stays token-bounded.
+const MAX_SERIES_POINTS = 130;
+
 /** Serialize the gathered input into the user message for the LLM. */
 export function buildUserPrompt(input: MarketAnalysisInput, language: 'en' | 'fr'): string {
-  const closes = input.series.map((p) => round(p.close));
+  const closes30 = downsample(input.series.map((p) => round(p.close)));
+  const closes5 = downsample(input.intradaySeries.map((p) => round(p.close)));
   return [
     `Respond in ${language === 'fr' ? 'French' : 'English'}.`,
     `Asset: ${input.asset} (${input.assetName})`,
-    `Timeframe: ${input.timeframe} — ${TIMEFRAME_BRIEF[input.timeframe]}`,
+    `Timeframe focus: ${input.timeframe} — ${TIMEFRAME_BRIEF[input.timeframe]}`,
     `Current price: ${input.currentPrice}`,
     input.changePercent !== null ? `Change: ${input.changePercent.toFixed(2)}%` : '',
     input.latestCandle
       ? `Latest candle O/H/L/C: ${round(input.latestCandle.open)}/${round(input.latestCandle.high)}/${round(input.latestCandle.low)}/${round(input.latestCandle.close)}`
       : '',
-    `Recent high/low: ${input.levels.recentHigh ?? 'n/a'} / ${input.levels.recentLow ?? 'n/a'}`,
+    `Recent high/low (2d): ${input.levels.recentHigh ?? 'n/a'} / ${input.levels.recentLow ?? 'n/a'}`,
     `Support levels: ${input.levels.support.map(round).join(', ') || 'n/a'}`,
     `Resistance levels: ${input.levels.resistance.map(round).join(', ') || 'n/a'}`,
     `Volatility ratio (recent/avg): ${input.volatility.ratio?.toFixed(2) ?? 'n/a'} (${input.volatility.level ?? 'n/a'})`,
@@ -54,10 +58,21 @@ export function buildUserPrompt(input: MarketAnalysisInput, language: 'en' | 'fr
     input.position.hasPosition
       ? `User has an OPEN ${input.position.direction} position from ${input.position.entryPrice}. Address it in the plan.`
       : 'User has no open position on this asset.',
-    `Close series (oldest→newest): ${closes.join(', ')}`,
+    `30-minute closes, last 12 days (oldest→newest): ${closes30.join(', ')}`,
+    `5-minute closes, last 2 days (oldest→newest): ${closes5.join(', ')}`,
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+// Keep every Nth point so a long series fits within MAX_SERIES_POINTS.
+function downsample(values: number[]): number[] {
+  if (values.length <= MAX_SERIES_POINTS) return values;
+  const step = Math.ceil(values.length / MAX_SERIES_POINTS);
+  const sampled = values.filter((_, i) => i % step === 0);
+  // Always keep the most recent close.
+  if (sampled[sampled.length - 1] !== values[values.length - 1]) sampled.push(values[values.length - 1]);
+  return sampled;
 }
 
 function round(value: number): number {

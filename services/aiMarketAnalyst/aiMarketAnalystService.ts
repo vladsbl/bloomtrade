@@ -1,8 +1,10 @@
 import { resolveAsset } from '../assetRegistry';
+import { getBinanceKlines } from '../binanceApi';
 import { getStockQuote } from '../financeApi';
 import { getHistoricalPrices } from '../historicalPriceService';
 import { scanAsset } from '../marketScannerService';
 import { collectOpenTrades } from '../portfolioAccountingService';
+import { getSyntheticLegs } from '../syntheticAssets';
 import { getCachedAnalysis, setCachedAnalysis } from './cache';
 import { SYSTEM_PROMPT, buildUserPrompt } from './prompts';
 import {
@@ -15,7 +17,6 @@ import {
   TradeScenario,
 } from './types';
 import { JournalDay } from '../../types/journal';
-import { HistoryRange } from '../../types/history';
 import { TranslationKey } from '../../store/translations';
 
 type Translate = (key: TranslationKey) => string;
@@ -26,11 +27,11 @@ type FormatPrice = (value: number) => string;
 const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY ?? '';
 const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 
-const TIMEFRAME_RANGE: Record<AnalysisTimeframe, HistoryRange> = {
-  intraday: '1D',
-  swing: '1M',
-  position: '1Y',
-};
+// The engine always pulls two granularities so it has multi-timeframe context:
+// 12 days of 30-minute candles for structure + 2 days of 5-minute candles for
+// the short-term read. The app fetches these automatically — no manual input.
+const M30 = { interval: '30m', limit: 12 * 48 }; // 12 days × 48 half-hours
+const M5 = { interval: '5m', limit: 2 * 288 }; // 2 days × 288 five-minute bars
 
 export interface RunAnalysisParams {
   symbol: string;
@@ -71,33 +72,35 @@ async function gatherInput(
 ): Promise<MarketAnalysisInput> {
   const asset = resolveAsset(symbol);
 
-  const [history, quote, scan] = await Promise.all([
-    getHistoricalPrices(symbol, TIMEFRAME_RANGE[timeframe])
-      .then((s) => s.points)
-      .catch(() => []),
+  const [series, intradaySeries, quote, scan] = await Promise.all([
+    getCandles(symbol, M30.interval, M30.limit), // 12d @ 30m
+    getCandles(symbol, M5.interval, M5.limit), // 2d @ 5m
     getStockQuote(symbol).catch(() => null),
     scanAsset(symbol).catch(() => null),
   ]);
 
-  const valid = history.filter((p) => Number.isFinite(p.price) && p.price > 0);
-  const series: SeriesPoint[] = valid.map((p) => ({
-    time: p.time,
-    close: p.price,
-    volume: Number.isFinite(p.volume) ? (p.volume as number) : null,
-  }));
+  const closes30 = series.map((p) => p.close);
+  const closes5 = intradaySeries.map((p) => p.close);
+  const lastClose = closes5.length
+    ? closes5[closes5.length - 1]
+    : closes30.length
+      ? closes30[closes30.length - 1]
+      : 0;
+  const currentPrice = quote?.currentPrice ?? lastClose;
 
-  const currentPrice = quote?.currentPrice ?? (series.length ? series[series.length - 1].close : 0);
-  const last20 = series.slice(-20).map((p) => p.close);
-  const recentHigh = last20.length ? Math.max(...last20) : null;
-  const recentLow = last20.length ? Math.min(...last20) : null;
+  // Broad structure from the 12-day window, near-term swings from the 2-day window.
+  const high12d = closes30.length ? Math.max(...closes30) : null;
+  const low12d = closes30.length ? Math.min(...closes30) : null;
+  const recentHigh = closes5.length ? Math.max(...closes5) : high12d;
+  const recentLow = closes5.length ? Math.min(...closes5) : low12d;
 
   const metrics = scan?.metrics;
-  const resistance = uniqueLevels([recentHigh, metrics?.high20 ?? null]);
-  const support = uniqueLevels([recentLow, metrics?.low20 ?? null]);
+  const resistance = uniqueLevels([recentHigh, high12d, metrics?.high20 ?? null]);
+  const support = uniqueLevels([recentLow, low12d, metrics?.low20 ?? null]);
 
   const volumes = series.map((p) => p.volume).filter((v): v is number => v !== null);
   const currentVolume = series.length ? series[series.length - 1].volume : null;
-  const averageVolume = volumes.length >= 5 ? mean(volumes.slice(-21, -1)) : null;
+  const averageVolume = volumes.length >= 5 ? mean(volumes.slice(-49, -1)) : null; // ~last day @30m
 
   const open = collectOpenTrades(days).find((o) => o.trade.symbol === symbol);
 
@@ -111,6 +114,7 @@ async function gatherInput(
       ? { open: quote.open, high: quote.high, low: quote.low, close: quote.currentPrice }
       : null,
     series,
+    intradaySeries,
     volume: {
       current: currentVolume,
       average: averageVolume,
@@ -127,6 +131,76 @@ async function gatherInput(
   };
 }
 
+// --- Multi-timeframe candle fetching --------------------------------------
+
+/**
+ * Fetch close+volume candles at an arbitrary interval. Binance assets use
+ * native klines; synthetic assets (e.g. XAUEUR) divide their two Binance legs;
+ * other sources fall back to whatever history is available.
+ */
+async function getCandles(symbol: string, interval: string, limit: number): Promise<SeriesPoint[]> {
+  const asset = resolveAsset(symbol);
+  try {
+    if (asset.source === 'binance') {
+      const points = await getBinanceKlines(asset.apiSymbol, interval, limit);
+      return points.map(toSeriesPoint);
+    }
+    if (asset.source === 'synthetic') {
+      const synthetic = await getSyntheticCandles(symbol, interval, limit);
+      if (synthetic.length > 0) return synthetic;
+    }
+  } catch {
+    // fall through to the generic fallback below
+  }
+
+  // Finnhub stocks have no intraday klines in this app — best effort.
+  const fallback = await getHistoricalPrices(symbol, '1M')
+    .then((s) => s.points)
+    .catch(() => []);
+  return fallback
+    .filter((p) => Number.isFinite(p.price) && p.price > 0)
+    .slice(-limit)
+    .map(toSeriesPoint);
+}
+
+/** Synthetic candles = base klines / quote klines, aligned by candle time. */
+async function getSyntheticCandles(
+  symbol: string,
+  interval: string,
+  limit: number
+): Promise<SeriesPoint[]> {
+  const legs = getSyntheticLegs(symbol);
+  if (!legs) return [];
+  const base = resolveAsset(legs.base);
+  const quote = resolveAsset(legs.quote);
+  if (base.source !== 'binance' || quote.source !== 'binance') return [];
+
+  const [baseK, quoteK] = await Promise.all([
+    getBinanceKlines(base.apiSymbol, interval, limit),
+    getBinanceKlines(quote.apiSymbol, interval, limit),
+  ]);
+  const quoteByTime = new Map(quoteK.map((p) => [p.time, p.price]));
+
+  return baseK
+    .filter((p) => {
+      const denom = quoteByTime.get(p.time);
+      return denom !== undefined && denom > 0 && Number.isFinite(p.price) && p.price > 0;
+    })
+    .map((p) => ({
+      time: p.time,
+      close: p.price / (quoteByTime.get(p.time) as number),
+      volume: Number.isFinite(p.volume) ? (p.volume as number) : null,
+    }));
+}
+
+function toSeriesPoint(point: { time: string; price: number; volume?: number }): SeriesPoint {
+  return {
+    time: point.time,
+    close: point.price,
+    volume: Number.isFinite(point.volume) ? (point.volume as number) : null,
+  };
+}
+
 // --- Local synthesis engine (offline, deterministic) -----------------------
 
 function synthesizeLocalAnalysis(
@@ -134,11 +208,16 @@ function synthesizeLocalAnalysis(
   t: Translate,
   fmt: FormatPrice
 ): MarketAnalysisOutput {
-  const closes = input.series.map((p) => p.close);
+  const closes = input.series.map((p) => p.close); // 12d @ 30m
   const n = closes.length;
-  const ret20 =
-    n > 21 ? (closes[n - 1] / closes[n - 21] - 1) * 100 : n > 1 ? (closes[n - 1] / closes[0] - 1) * 100 : 0;
-  const trend: 'uptrend' | 'downtrend' | 'range' = ret20 > 3 ? 'uptrend' : ret20 < -3 ? 'downtrend' : 'range';
+  // 12-day structural trend from the 30-minute series.
+  const periodReturn = n > 1 ? (closes[n - 1] / closes[0] - 1) * 100 : 0;
+  const trend: 'uptrend' | 'downtrend' | 'range' =
+    periodReturn > 3 ? 'uptrend' : periodReturn < -3 ? 'downtrend' : 'range';
+  // Short-term momentum from the 2-day, 5-minute series.
+  const intraday = input.intradaySeries.map((p) => p.close);
+  const intradayReturn =
+    intraday.length > 1 ? (intraday[intraday.length - 1] / intraday[0] - 1) * 100 : 0;
 
   const bias = resolveBias(input.signals, trend);
   const conviction = Math.round(clamp(input.opportunityScore, 0, 100));
@@ -180,7 +259,9 @@ function synthesizeLocalAnalysis(
       input.volatility.ratio !== null
         ? fill(t('ai.gen.volRegime'), { ratio: input.volatility.ratio.toFixed(1), level: volLevelWord })
         : t('ai.gen.volUnknown'),
-    momentum: t(ret20 > 1 ? 'ai.gen.momentumUp' : ret20 < -1 ? 'ai.gen.momentumDown' : 'ai.gen.momentumFlat'),
+    momentum: t(
+      intradayReturn > 1 ? 'ai.gen.momentumUp' : intradayReturn < -1 ? 'ai.gen.momentumDown' : 'ai.gen.momentumFlat'
+    ),
   };
 
   // 3. Key levels
