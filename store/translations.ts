@@ -204,6 +204,30 @@ export const en = {
   'analytics.insight.winStreak': 'Your best run is {streak} winning trades in a row.',
   'analytics.insight.disciplineHigh': 'Solid discipline: you journal your trades and size them consistently.',
   'analytics.insight.disciplineLow': 'Add notes and keep position sizes consistent to sharpen your discipline.',
+
+  'settings.tradingAccount': 'Trading account',
+  'settings.initialCapital': 'Initial capital',
+  'settings.accountCurrency': 'Account currency',
+  'settings.leverage': 'Default leverage',
+
+  'account.overview': 'Account Overview',
+  'account.currentCapital': 'Current capital',
+  'account.initialCapital': 'Initial capital',
+  'account.investedCapital': 'Invested capital',
+  'account.availableCapital': 'Available capital',
+  'account.marginUsed': 'Margin used',
+  'account.unrealizedPnl': 'Unrealized P&L',
+  'account.realizedPnl': 'Realized P&L',
+  'account.openPositions': 'Open positions',
+
+  'positions.title': 'Open Positions',
+  'positions.empty': 'No open positions.',
+  'positions.entryPrice': 'Entry',
+  'positions.currentPrice': 'Current',
+  'positions.quantity': 'Qty',
+  'positions.openedOn': 'Opened',
+  'positions.close': 'Close',
+  'positions.unquoted': 'Not quoted',
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -416,4 +440,28 @@ export const fr: Record<TranslationKey, string> = {
   'analytics.insight.winStreak': 'Votre meilleure série est de {streak} trades gagnants consécutifs.',
   'analytics.insight.disciplineHigh': 'Bonne discipline : vous documentez vos trades et dimensionnez vos positions de façon cohérente.',
   'analytics.insight.disciplineLow': 'Ajoutez des notes et gardez des tailles de position cohérentes pour renforcer votre discipline.',
+
+  'settings.tradingAccount': 'Compte de trading',
+  'settings.initialCapital': 'Capital initial',
+  'settings.accountCurrency': 'Devise du compte',
+  'settings.leverage': 'Levier par défaut',
+
+  'account.overview': 'Aperçu du compte',
+  'account.currentCapital': 'Capital actuel',
+  'account.initialCapital': 'Capital initial',
+  'account.investedCapital': 'Capital investi',
+  'account.availableCapital': 'Capital disponible',
+  'account.marginUsed': 'Marge utilisée',
+  'account.unrealizedPnl': 'PnL latent',
+  'account.realizedPnl': 'PnL réalisé',
+  'account.openPositions': 'Positions ouvertes',
+
+  'positions.title': 'Positions ouvertes',
+  'positions.empty': 'Aucune position ouverte.',
+  'positions.entryPrice': 'Entrée',
+  'positions.currentPrice': 'Actuel',
+  'positions.quantity': 'Qté',
+  'positions.openedOn': 'Ouverte le',
+  'positions.close': 'Fermer',
+  'positions.unquoted': 'Non coté',
 };

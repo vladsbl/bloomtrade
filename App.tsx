@@ -7,6 +7,7 @@ import { CurrencyProvider } from './store/currency';
 import { LanguageProvider } from './store/i18n';
 import { JournalByDateProvider } from './store/journalByDate';
 import { ThemeProvider, useTheme } from './store/theme';
+import { TradingAccountProvider } from './store/tradingAccount';
 
 function AppContent() {
   const { mode } = useTheme();
@@ -26,9 +27,11 @@ export default function App() {
         <LanguageProvider>
           <CurrencyProvider>
             <JournalByDateProvider>
-              <AlertsProvider>
-                <AppContent />
-              </AlertsProvider>
+              <TradingAccountProvider>
+                <AlertsProvider>
+                  <AppContent />
+                </AlertsProvider>
+              </TradingAccountProvider>
             </JournalByDateProvider>
           </CurrencyProvider>
         </LanguageProvider>

@@ -2,10 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AccountOverviewCard from '../components/account/AccountOverviewCard';
+import OpenPositionCard from '../components/account/OpenPositionCard';
 import JournalCalendar from '../components/JournalCalendar';
 import TradeCard from '../components/TradeCard';
+import { useOpenPositions } from '../hooks/useOpenPositions';
 import { JournalStackParamList } from '../navigation/JournalStack';
 import { formatDateKey } from '../services/calendarUtils';
 import { useLanguage } from '../store/i18n';
@@ -21,6 +24,15 @@ export default function JournalScreen() {
   const styles = createStyles(colors);
   const navigation = useNavigation<JournalScreenNavigationProp>();
   const { days, removeTrade } = useJournalByDate();
+  const {
+    positions,
+    summary,
+    loading: positionsLoading,
+    refreshing,
+    refresh,
+    closingId,
+    closePosition,
+  } = useOpenPositions();
 
   const [selectedDateKey, setSelectedDateKey] = useState(() => formatDateKey(new Date()));
 
@@ -78,6 +90,9 @@ export default function JournalScreen() {
           <TradeCard trade={item} onDelete={(id) => removeTrade(selectedDateKey, id)} />
         )}
         contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />
+        }
         ListHeaderComponent={
           <View>
             <JournalCalendar
@@ -119,6 +134,28 @@ export default function JournalScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyText}>{t('journal.noTrades')}</Text>
+          </View>
+        }
+        ListFooterComponent={
+          <View style={styles.footer}>
+            <Text style={styles.sectionHeading}>{t('account.overview')}</Text>
+            <AccountOverviewCard summary={summary} />
+
+            <Text style={styles.sectionHeading}>{t('positions.title')}</Text>
+            {positionsLoading ? (
+              <ActivityIndicator color={colors.primary} style={styles.positionsLoader} />
+            ) : positions.length === 0 ? (
+              <Text style={styles.positionsEmpty}>{t('positions.empty')}</Text>
+            ) : (
+              positions.map((position) => (
+                <OpenPositionCard
+                  key={position.trade.id}
+                  position={position}
+                  onClose={() => closePosition(position)}
+                  closing={closingId === position.trade.id}
+                />
+              ))
+            )}
           </View>
         }
       />
@@ -167,6 +204,26 @@ const createStyles = (colors: ColorPalette) =>
     },
     list: {
       paddingBottom: 24,
+    },
+    footer: {
+      marginTop: 12,
+    },
+    sectionHeading: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '800',
+      paddingHorizontal: 16,
+      marginTop: 8,
+      marginBottom: 12,
+    },
+    positionsLoader: {
+      marginVertical: 16,
+    },
+    positionsEmpty: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
     },
     dayHeader: {
       flexDirection: 'row',

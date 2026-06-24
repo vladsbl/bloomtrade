@@ -16,4 +16,11 @@ export interface Trade {
   // position is later closed, enabling holding-duration analysis.
   openedAt?: number;
   closedAt?: number;
+  // Leverage/margin context captured at open time for the trading account.
+  // Optional & backward compatible: older trades resolve to leverage x1 in the
+  // accounting service. positionSize = |entryPrice * quantity| (notional),
+  // marginUsed = positionSize / leverageUsed.
+  leverageUsed?: number;
+  positionSize?: number;
+  marginUsed?: number;
 }

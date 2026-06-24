@@ -20,6 +20,7 @@ import { JournalStackParamList } from '../navigation/JournalStack';
 import { useCurrency } from '../store/currency';
 import { useLanguage } from '../store/i18n';
 import { useJournalByDate } from '../store/journalByDate';
+import { useTradingAccount } from '../store/tradingAccount';
 import { useTheme } from '../store/theme';
 import { ColorPalette } from '../theme/palettes';
 import { TradeDirection, TradeStatus } from '../types/trade';
@@ -38,6 +39,7 @@ export default function AddTradeScreen() {
   const { params } = useRoute<AddTradeRouteProp>();
   const { addTrade } = useJournalByDate();
   const { toNative, symbolForAsset } = useCurrency();
+  const { leverage } = useTradingAccount();
   const headerHeight = useHeaderHeight();
 
   const [symbol, setSymbol] = useState('');
@@ -67,6 +69,7 @@ export default function AddTradeScreen() {
       exitPrice: status === 'closed' ? toNative(parseFloat(exitPrice), tradeSymbol) : undefined,
       quantity: parseFloat(quantity),
       notes: notes.trim() || undefined,
+      leverageUsed: leverage,
     });
     navigation.goBack();
   };

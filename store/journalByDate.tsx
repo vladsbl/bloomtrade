@@ -53,6 +53,9 @@ export function JournalByDateProvider({ children }: { children: ReactNode }) {
       setDays((prev) => {
         const day = prev[date] ?? emptyDay(date);
         const now = Date.now();
+        // Capture leverage/margin context at open time (defaults to x1).
+        const leverageUsed = trade.leverageUsed && trade.leverageUsed > 0 ? trade.leverageUsed : 1;
+        const positionSize = Math.abs((trade.entryPrice || 0) * (trade.quantity || 0));
         // Stamp openedAt for entry-time analytics; if the trade is logged
         // already closed, stamp closedAt too so it isn't left dangling.
         const created: Trade = {
@@ -60,6 +63,9 @@ export function JournalByDateProvider({ children }: { children: ReactNode }) {
           id: now.toString(),
           openedAt: trade.openedAt ?? now,
           closedAt: trade.status === 'closed' ? trade.closedAt ?? now : trade.closedAt,
+          leverageUsed,
+          positionSize,
+          marginUsed: positionSize / leverageUsed,
         };
         const next = {
           ...prev,

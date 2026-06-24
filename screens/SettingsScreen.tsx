@@ -1,17 +1,39 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LEVERAGE_OPTIONS } from '../services/portfolioAccountingService';
 import { useCurrency } from '../store/currency';
 import { Language, useLanguage } from '../store/i18n';
 import { ThemeMode, useTheme } from '../store/theme';
-import { Currency } from '../types/currency';
+import { useTradingAccount } from '../store/tradingAccount';
+import { Currency, CURRENCY_SYMBOLS } from '../types/currency';
 import { ColorPalette } from '../theme/palettes';
 
 export default function SettingsScreen() {
   const { colors, mode, setTheme } = useTheme();
   const { t, language, setLanguage } = useLanguage();
   const { currency, setCurrency } = useCurrency();
+  const {
+    initialCapital,
+    leverage,
+    accountCurrency,
+    updateCapital,
+    updateLeverage,
+    updateAccountCurrency,
+  } = useTradingAccount();
   const styles = createStyles(colors);
+
+  // Local draft so the field stays editable while typing; commit valid numbers.
+  const [capitalDraft, setCapitalDraft] = useState(String(initialCapital));
+  useEffect(() => {
+    setCapitalDraft(String(initialCapital));
+  }, [initialCapital]);
+
+  const onCapitalChange = (text: string) => {
+    setCapitalDraft(text);
+    const value = parseFloat(text.replace(',', '.'));
+    if (Number.isFinite(value) && value >= 0) updateCapital(value);
+  };
 
   const themeOptions: { value: ThemeMode; label: string }[] = [
     { value: 'dark', label: t('settings.dark') },
@@ -28,13 +50,22 @@ export default function SettingsScreen() {
     { value: 'EUR', label: t('settings.currencyEur') },
   ];
 
+  const accountCurrencyOptions: { value: Currency; label: string }[] = [
+    { value: 'USD', label: `${CURRENCY_SYMBOLS.USD} USD` },
+    { value: 'EUR', label: `${CURRENCY_SYMBOLS.EUR} EUR` },
+  ];
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('settings.title')}</Text>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.theme')}</Text>
           <View style={styles.optionRow}>
@@ -97,7 +128,60 @@ export default function SettingsScreen() {
             ))}
           </View>
         </View>
-      </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.tradingAccount')}</Text>
+
+          <Text style={styles.fieldLabel}>
+            {t('settings.initialCapital')} ({CURRENCY_SYMBOLS[accountCurrency]})
+          </Text>
+          <TextInput
+            style={styles.input}
+            keyboardType="decimal-pad"
+            value={capitalDraft}
+            onChangeText={onCapitalChange}
+            placeholder="10000"
+            placeholderTextColor={colors.textSecondary}
+          />
+
+          <Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>
+            {t('settings.accountCurrency')}
+          </Text>
+          <View style={styles.optionRow}>
+            {accountCurrencyOptions.map((option) => (
+              <Pressable
+                key={option.value}
+                style={[styles.option, accountCurrency === option.value && styles.optionActive]}
+                onPress={() => updateAccountCurrency(option.value)}
+              >
+                <Text
+                  style={[
+                    styles.optionText,
+                    accountCurrency === option.value && styles.optionTextActive,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('settings.leverage')}</Text>
+          <View style={styles.chipsRow}>
+            {LEVERAGE_OPTIONS.map((value) => (
+              <Pressable
+                key={value}
+                style={[styles.chip, leverage === value && styles.optionActive]}
+                onPress={() => updateLeverage(value)}
+              >
+                <Text style={[styles.chipText, leverage === value && styles.optionTextActive]}>
+                  x{value}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -117,9 +201,13 @@ const createStyles = (colors: ColorPalette) =>
       fontSize: 26,
       fontWeight: '800',
     },
+    scroll: {
+      flex: 1,
+    },
     content: {
       paddingHorizontal: 16,
       paddingTop: 8,
+      paddingBottom: 24,
     },
     section: {
       backgroundColor: colors.surface,
@@ -160,5 +248,43 @@ const createStyles = (colors: ColorPalette) =>
     },
     optionTextActive: {
       color: '#fff',
+    },
+    fieldLabel: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '600',
+      marginBottom: 8,
+    },
+    fieldLabelSpaced: {
+      marginTop: 16,
+    },
+    input: {
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 14,
+      paddingVertical: 11,
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    chipsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    chip: {
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceAlt,
+    },
+    chipText: {
+      color: colors.textSecondary,
+      fontWeight: '700',
+      fontSize: 13,
     },
   });
