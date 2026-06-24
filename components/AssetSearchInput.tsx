@@ -9,9 +9,12 @@ import { ColorPalette } from '../theme/palettes';
 interface AssetSearchInputProps {
   existingSymbols: string[];
   onSelect: (asset: Asset) => void;
+  // Pop the keyboard open on mount. Default true; disable when the field shares
+  // the screen with other controls that the keyboard would otherwise cover.
+  autoFocus?: boolean;
 }
 
-export default function AssetSearchInput({ existingSymbols, onSelect }: AssetSearchInputProps) {
+export default function AssetSearchInput({ existingSymbols, onSelect, autoFocus = true }: AssetSearchInputProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const styles = createStyles(colors);
@@ -31,7 +34,7 @@ export default function AssetSearchInput({ existingSymbols, onSelect }: AssetSea
         style={styles.input}
         placeholder={t('market.searchPlaceholder')}
         placeholderTextColor={colors.textSecondary}
-        autoFocus
+        autoFocus={autoFocus}
         autoCorrect={false}
         autoCapitalize="none"
         value={query}

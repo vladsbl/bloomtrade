@@ -1,6 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AssetSearchInput from '../AssetSearchInput';
 import { AnalysisTimeframe } from '../../services/aiMarketAnalyst/types';
@@ -62,7 +71,10 @@ export default function AssetSelectorModal({ visible, onClose, onConfirm, favori
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView
+        style={styles.backdrop}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <SafeAreaView style={styles.sheet} edges={['bottom']}>
           <View style={styles.handleRow}>
             <Text style={styles.title}>{t('ai.modal.title')}</Text>
@@ -88,7 +100,7 @@ export default function AssetSelectorModal({ visible, onClose, onConfirm, favori
               </View>
             )}
 
-            <AssetSearchInput existingSymbols={[]} onSelect={(asset) => setSelected(asset.symbol)} />
+            <AssetSearchInput existingSymbols={[]} autoFocus={false} onSelect={(asset) => setSelected(asset.symbol)} />
 
             {selected && (
               <View style={styles.selectedRow}>
@@ -124,7 +136,7 @@ export default function AssetSelectorModal({ visible, onClose, onConfirm, favori
             <Text style={styles.runButtonText}>{t('ai.modal.run')}</Text>
           </Pressable>
         </SafeAreaView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
