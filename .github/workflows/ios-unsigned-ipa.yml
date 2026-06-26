@@ -1,0 +1,90 @@
+name: Build unsigned iOS IPA (AltStore)
+
+# Lancement MANUEL uniquement : tu cliques "Run workflow" dans l'onglet Actions
+# de GitHub quand tu veux fabriquer un nouvel .ipa. Ça evite de consommer des
+# minutes macOS a chaque push.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Runner macOS (gratuit/illimité sur depot PUBLIC, ~200 min/mois sur depot prive).
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      # Genere le projet natif ios/ a partir de app.json (sans reinstaller les deps).
+      - name: Prebuild native iOS project
+        run: npx expo prebuild --platform ios --no-install
+        env:
+          EXPO_NO_TELEMETRY: '1'
+          # --- Cles API (optionnel) ---------------------------------------
+          # L'app marche SANS ces cles (les fonctionnalites concernees se
+          # desactivent proprement). Pour les activer, ajoute-les dans
+          # GitHub > Settings > Secrets and variables > Actions, puis
+          # decommente les lignes ci-dessous. Elles seront integrees au bundle.
+          # EXPO_PUBLIC_FINNHUB_API_KEY: ${{ secrets.EXPO_PUBLIC_FINNHUB_API_KEY }}
+          # EXPO_PUBLIC_ALPHAVANTAGE_API_KEY: ${{ secrets.EXPO_PUBLIC_ALPHAVANTAGE_API_KEY }}
+          # EXPO_PUBLIC_ANTHROPIC_API_KEY: ${{ secrets.EXPO_PUBLIC_ANTHROPIC_API_KEY }}
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+
+      # Compile l'app SANS signature (CODE_SIGNING_ALLOWED=NO).
+      # AltStore/SideStore signera lui-meme l'app avec ton Apple ID gratuit.
+      - name: Build unsigned .app
+        env:
+          # Memes cles que ci-dessus : necessaires ici aussi car le bundle JS
+          # est genere pendant cette etape. Decommente si tu utilises des cles.
+          # EXPO_PUBLIC_FINNHUB_API_KEY: ${{ secrets.EXPO_PUBLIC_FINNHUB_API_KEY }}
+          # EXPO_PUBLIC_ALPHAVANTAGE_API_KEY: ${{ secrets.EXPO_PUBLIC_ALPHAVANTAGE_API_KEY }}
+          # EXPO_PUBLIC_ANTHROPIC_API_KEY: ${{ secrets.EXPO_PUBLIC_ANTHROPIC_API_KEY }}
+          EXPO_NO_TELEMETRY: '1'
+        run: |
+          cd ios
+          WORKSPACE=$(ls -d *.xcworkspace | head -1)
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+          echo "Workspace: $WORKSPACE | Scheme: $SCHEME"
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            build
+
+      # Emballe le .app dans un .ipa (dossier Payload/ + zip).
+      - name: Package into .ipa
+        run: |
+          cd ios
+          APP_PATH=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -1)
+          echo "App build: $APP_PATH"
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          zip -r Bloomtrade.ipa Payload >/dev/null
+          ls -lh Bloomtrade.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bloomtrade-ipa
+          path: ios/Bloomtrade.ipa
+          if-no-files-found: error
