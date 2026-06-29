@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     # Runner macOS (gratuit/illimité sur depot PUBLIC, ~200 min/mois sur depot prive).
-    runs-on: macos-15
+    runs-on: macos-14
     timeout-minutes: 60
 
     steps:
